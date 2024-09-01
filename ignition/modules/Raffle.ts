@@ -4,7 +4,7 @@ import { str, envsafe, port, url, makeValidator, num } from 'envsafe';
 import hre from "hardhat";
 
 
-export default buildModule("Raffle", (m) => {
+export default buildModule("Deployment", (m) => {
     const address = makeValidator<string>(input => {
         if (!hre.ethers.isAddress(input)) {
             throw new Error(`${input} is not a valid EVM address`);

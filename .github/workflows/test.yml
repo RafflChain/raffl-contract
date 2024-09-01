@@ -10,7 +10,7 @@ jobs:
   test:
     strategy:
       matrix:
-        command: [check, build, test]
+        command: [check, build, test, lint]
     runs-on: ubuntu-latest
     name: running ${{ matrix.command }}
     steps:

@@ -63,3 +63,8 @@ jobs:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           SEPOLIA_PRIVATE_KEY: ${{ secrets.SEPOLIA_PRIVATE_KEY }}
           HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
+      - name: Get contract address
+        run: |
+          ADDRESS=$(jq -r '."Deployment#Raffle"' ignition/deployments/chain-11155111/deployed_addresses.json)
+          echo '# Raffle deployed! 🚀' >> $GITHUB_STEP_SUMMARY
+          echo "Address: <a href=\"https://sepolia.etherscan.io/address/$ADDRESS\">$ADDRESS</a>" >> $GITHUB_STEP_SUMMARY

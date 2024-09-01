@@ -1,0 +1,44 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        command: [check, build, test, lint]
+    runs-on: ubuntu-latest
+    name: running ${{ matrix.command }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: bash
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+      - name: Use cached node_modules
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install dependencies
+        run: npm ci
+      - run: npm run ${{ matrix.command }}
+
+  conclude:
+    runs-on: ubuntu-latest
+    name: All tests passed
+    needs: [test]
+    steps:
+      - run: echo '### Good job! All the tests passed 🚀' >> $GITHUB_STEP_SUMMARY

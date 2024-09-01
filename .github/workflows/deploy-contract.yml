@@ -1,0 +1,65 @@
+name: Deploy Contract
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: "Network"
+        required: true
+        default: "sepolia"
+        type: choice
+        options:
+          - sepolia
+      price:
+        description: "Ticket Price"
+        required: true
+        type: number
+      duration:
+        description: "Duration of Raffle"
+        required: true
+        type: number
+        default: 30
+      donation:
+        description: "Donation address"
+        required: true
+        type: string
+      token:
+        description: "Address of the ERC20 token"
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Deploying contract
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: bash
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+      - name: Use cached node_modules
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install dependencies
+        run: npm ci
+      - name: Run deployment script
+        run: npx hardhat ignition deploy ignition/modules/Raffle.ts --network sepolia --verify
+        env:
+          DONATION: ${{ inputs.donation }}
+          PRICE: ${{ inputs.price }}
+          TOKEN: ${{ inputs.token }}
+          DURATION: ${{ inputs.duration }}
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          SEPOLIA_PRIVATE_KEY: ${{ secrets.SEPOLIA_PRIVATE_KEY }}
+          HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false

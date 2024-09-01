@@ -1,8 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-solhint";
-import 'hardhat-publish-typechain';
+import "hardhat-publish-typechain";
 import { HardhatUserConfig } from "hardhat/config";
-
 
 import { envsafe, str } from "envsafe";
 
@@ -25,8 +24,8 @@ const env = envsafe({
   }),
   VERSION: str({
     default: "0.0.0",
-    allowEmpty: true
-  })
+    allowEmpty: true,
+  }),
 });
 
 const config: HardhatUserConfig = {
@@ -36,11 +35,11 @@ const config: HardhatUserConfig = {
   },
   networks: env.SEPOLIA_PRIVATE_KEY
     ? {
-      sepolia: {
-        url: `https://eth-sepolia.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`,
-        accounts: [env.SEPOLIA_PRIVATE_KEY],
-      },
-    }
+        sepolia: {
+          url: `https://eth-sepolia.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`,
+          accounts: [env.SEPOLIA_PRIVATE_KEY],
+        },
+      }
     : {},
   publishTypechain: {
     name: "raffle-contract",
@@ -49,7 +48,7 @@ const config: HardhatUserConfig = {
     iifeGlobalObjectName: "mock",
     ignoreDeployedNetworks: ["localhost"],
     authToken: env.NPM_TOKEN,
-  }
+  },
 };
 
 export default config;

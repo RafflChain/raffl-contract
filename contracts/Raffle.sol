@@ -109,7 +109,7 @@ contract Raffle {
         return players[index];
     }
 
-    function finishRaffle() public {
+    function finishRaffle() public returns (address) {
         require(msg.sender == owner, "Invoker must be the owner");
         require(
             block.timestamp > raffleEndDate,
@@ -125,5 +125,7 @@ contract Raffle {
         uint commision = (halfOfPot / 100) * 5;
         token.transfer(donationAddress, halfOfPot - commision);
         token.transfer(owner, commision);
+
+        return winner;
     }
 }

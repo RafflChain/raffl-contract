@@ -3,7 +3,7 @@
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",
-    "check": "hardhat check && prettier --check . --max-warnings=0",
+    "check": "hardhat check && prettier --check .",
     "clean": "hardhat clean",
     "postinstall": "npm run build"
   },

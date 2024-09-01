@@ -3,10 +3,11 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+// Author @Bullrich
 contract Raffle {
     address[] public players;
-    address payable private owner;
-    address payable public donationAddress;
+    address private owner;
+    address public donationAddress;
     uint public raffleEndDate;
     uint public pot;
     uint public ticketPrice;
@@ -15,7 +16,7 @@ contract Raffle {
     IERC20Metadata public token;
 
     constructor(
-        address payable donation,
+        address donation,
         uint _ticketPrice,
         uint8 daysToEndDate,
         IERC20Metadata _token

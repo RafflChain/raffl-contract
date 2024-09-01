@@ -528,6 +528,7 @@ describe("Raffle", function () {
         pot / 2n - comission,
       );
     });
+
     it("Should distribute the pot between winner, donation campaign and comission", async () => {
       const { raffle, owner, token, players, donation, ticketPrice } =
         await loadFixture(deployRaffleFixture);
@@ -548,6 +549,56 @@ describe("Raffle", function () {
         token,
         [player, donation, owner],
         [pot / 2n, pot / 2n - comission, comission],
+      );
+    });
+
+    it("Should define a winner", async () => {
+      const { raffle, owner, token, players, ticketPrice } =
+        await loadFixture(deployRaffleFixture);
+      const [player] = players;
+      await token
+        .connect(player)
+        .approve(
+          await raffle.getAddress(),
+          ticketPrice * PRICE_10_TICKET_MULTIPLIER,
+        );
+      await raffle.connect(player).buy10Tickets();
+      const pot = await raffle.pot();
+
+      time.increaseTo(generateDateInTheFuture(10));
+      await expect(raffle.connect(owner).finishRaffle()).to.changeTokenBalance(
+        token,
+        player,
+        pot / 2n,
+      );
+
+      expect(await raffle.winner()).to.equal(player.address);
+    });
+
+    it("Should not be able to be invoked once a winner was decided", async () => {
+      const { raffle, owner, token, players, ticketPrice } =
+        await loadFixture(deployRaffleFixture);
+      const [player] = players;
+      await token
+        .connect(player)
+        .approve(
+          await raffle.getAddress(),
+          ticketPrice * PRICE_10_TICKET_MULTIPLIER,
+        );
+      await raffle.connect(player).buy10Tickets();
+      const pot = await raffle.pot();
+
+      time.increaseTo(generateDateInTheFuture(10));
+      await expect(raffle.connect(owner).finishRaffle()).to.changeTokenBalance(
+        token,
+        player,
+        pot / 2n,
+      );
+
+      expect(await raffle.winner()).to.equal(player.address);
+
+      await expect(raffle.connect(owner).finishRaffle()).to.rejectedWith(
+        "A winner has already been selected",
       );
     });
   });

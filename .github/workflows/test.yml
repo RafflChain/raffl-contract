@@ -32,8 +32,6 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
-      - name: Copy .env file
-        run: cp example.env .env
       - name: Install dependencies
         run: npm ci
       - run: npm run ${{ matrix.command }}
@@ -41,6 +39,6 @@ jobs:
   conclude:
     runs-on: ubuntu-latest
     name: All tests passed
-    needs: [test, contract]
+    needs: [test]
     steps:
       - run: echo '### Good job! All the tests passed 🚀' >> $GITHUB_STEP_SUMMARY

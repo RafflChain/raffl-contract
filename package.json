@@ -3,6 +3,7 @@
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",
+    "check": "hardhat check && prettier --check . --max-warnings=0",
     "clean": "hardhat clean",
     "postinstall": "npm run build"
   },
@@ -10,6 +11,7 @@
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@openzeppelin/contracts": "^5.0.2",
     "@typechain/ethers-v6": "^0.5.1",
-    "hardhat": "^2.22.9"
+    "hardhat": "^2.22.9",
+    "prettier": "^3.3.3"
   }
 }

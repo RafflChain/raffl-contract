@@ -46,7 +46,6 @@ const config: HardhatUserConfig = {
     name: "raffle-contract",
     repository: "https://github.com/Bullrich/raffle-contract",
     version: env.VERSION,
-    includeDeployed: true,
     iifeGlobalObjectName: "mock",
     ignoreDeployedNetworks: ["localhost"],
     authToken: env.NPM_TOKEN,

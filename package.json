@@ -1,5 +1,5 @@
 {
-  "name": "hardhat-project",
+  "name": "raffle-contract",
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",

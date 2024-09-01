@@ -1,5 +1,5 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import { str, envsafe, port, url, makeValidator, num } from 'envsafe';
+import { envsafe, makeValidator, num } from 'envsafe';
 
 import hre from "hardhat";
 

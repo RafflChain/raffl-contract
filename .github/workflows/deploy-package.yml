@@ -7,7 +7,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: master
     name: Deploying contract
     steps:
       - name: Checkout
@@ -33,8 +32,5 @@ jobs:
       - name: Run npm deployment
         run: npx hardhat pub-type
         env:
-          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-          SEPOLIA_PRIVATE_KEY: ${{ secrets.SEPOLIA_PRIVATE_KEY }}
-          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           VERSION: ${{ github.event.release.tag_name }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

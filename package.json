@@ -6,8 +6,7 @@
     "check": "hardhat check",
     "lint": "prettier --check .",
     "format": "prettier --write .",
-    "clean": "hardhat clean",
-    "postinstall": "npm run build"
+    "clean": "hardhat clean"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

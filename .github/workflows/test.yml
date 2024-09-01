@@ -35,10 +35,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - run: npm run ${{ matrix.command }}
-        env:
-          ALCHEMY_API_KEY: "ALCHEMY_API_KEY"
-          SEPOLIA_PRIVATE_KEY: "SEPOLIA_PRIVATE_KEY"
-          ETHERSCAN_API_KEY: "ETHERSCAN_API_KEY"
 
   conclude:
     runs-on: ubuntu-latest

@@ -1,5 +1,5 @@
 {
-  "name": "hardhat-project",
+  "name": "raffle-contract",
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",
@@ -15,6 +15,7 @@
     "@typechain/ethers-v6": "^0.5.1",
     "envsafe": "^2.0.3",
     "hardhat": "^2.22.9",
+    "hardhat-publish-typechain": "^0.7.1",
     "prettier": "^3.3.3",
     "prettier-plugin-solidity": "^1.4.1"
   }

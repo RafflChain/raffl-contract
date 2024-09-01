@@ -15,6 +15,8 @@ contract Raffle {
     uint public price100Tickets;
     IERC20Metadata public token;
 
+    address public winner;
+
     constructor(
         address donation,
         uint _ticketPrice,
@@ -114,8 +116,9 @@ contract Raffle {
             "End date has not being reached yet"
         );
         require(pot > 0, "The pot is empty. Raffle is invalid");
+        require(winner == address(0), "A winner has already been selected");
 
-        address winner = pickRandomWinner();
+        winner = pickRandomWinner();
         // Divide into parts
         uint halfOfPot = pot / 2;
         token.transfer(winner, halfOfPot);

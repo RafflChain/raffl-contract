@@ -29,8 +29,9 @@ on:
         type: string
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
+    environment: master
     name: Deploying contract
     steps:
       - name: Checkout

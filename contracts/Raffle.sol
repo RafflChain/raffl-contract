@@ -12,23 +12,23 @@ contract Raffle {
     address[] public players;
     /// Address of the deployer of the contract.
     /// @notice This is the user that can finalize the raffle and receives the commision
-    address private owner;
+    address private immutable owner;
     /// Address of the charity that will receive the tokens
-    address public donationAddress;
+    address public immutable donationAddress;
     /// Timestamp of when the raffle ends
-    uint public raffleEndDate;
+    uint public immutable raffleEndDate;
     /// Total amount of the tokens in the contract
-    uint public pot;
+    uint public immutable pot;
     /// Price of an individual ticket
-    uint public ticketPrice;
+    uint public immutable ticketPrice;
     /// Price of 10 tickets
     /// @notice the price is lower than actually buying 10 tickets individually to attract more purchases
-    uint public price10Tickets;
+    uint public immutable price10Tickets;
     /// Price of 100 tickets
     /// @notice the price is lower than actually buying 100 tickets individually to attract more purchases
-    uint public price100Tickets;
+    uint public immutable price100Tickets;
     /// Token used in the contract as the currency
-    IERC20Metadata public token;
+    IERC20Metadata public immutable token;
 
     /// Address of the winner
     /// @dev this value is set up only after the raffle end

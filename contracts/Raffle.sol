@@ -28,7 +28,7 @@ contract Raffle {
             block.timestamp < raffleEndDate,
             "Unlock time should be in the future"
         );
-        owner = payable(msg.sender);
+        owner = msg.sender;
         donationAddress = donation;
         token = _token;
         ticketPrice = _ticketPrice * (10 ** token.decimals());
@@ -57,15 +57,15 @@ contract Raffle {
         return amountOfTickets;
     }
 
-    function buySingleTicket() public payable returns (uint) {
+    function buySingleTicket() public returns (uint) {
         return buyCollectionOfTickets(1, ticketPrice);
     }
 
-    function buy10Tickets() public payable returns (uint) {
+    function buy10Tickets() public returns (uint) {
         return buyCollectionOfTickets(10, price10Tickets);
     }
 
-    function buy100Tickets() public payable returns (uint) {
+    function buy100Tickets() public returns (uint) {
         return buyCollectionOfTickets(100, price100Tickets);
     }
 

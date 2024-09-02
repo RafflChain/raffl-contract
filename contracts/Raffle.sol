@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-// Author @Bullrich
 /// @title Raffle contract to start a raffle with as many users as possible
 /// @author @Bullrich
 /// @notice Only the deployer of the contract can finish the raffle
@@ -39,17 +38,9 @@ contract Raffle {
     /// @param _ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
     /// @param _token Address of the ERC20 token that will be used in the Raffle
-    constructor(
-        address donation,
-        uint _ticketPrice,
-        uint8 daysToEndDate,
-        IERC20Metadata _token
-    ) {
+    constructor(address donation, uint _ticketPrice, uint8 daysToEndDate, IERC20Metadata _token) {
         raffleEndDate = getFutureTimestamp(daysToEndDate);
-        require(
-            block.timestamp < raffleEndDate,
-            "Unlock time should be in the future"
-        );
+        require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
         donationAddress = donation;
         token = _token;
@@ -61,18 +52,12 @@ contract Raffle {
     /// Utility method used to buy any given amount of tickets
     /// @param amountOfTickets current amount of tickets (must be bigger than 0)
     /// @param totalPrice Price of the collection of tickets (must be at least the price of one ticket)
-    function buyCollectionOfTickets(
-        uint amountOfTickets,
-        uint totalPrice
-    ) private returns (uint) {
+    function buyCollectionOfTickets(uint amountOfTickets, uint totalPrice) private returns (uint) {
         require(block.timestamp < raffleEndDate, "Raffle is over");
         require(amountOfTickets > 0, "Can not buy 0 tickets");
         require(totalPrice >= ticketPrice, "Price is too low");
         require(token.balanceOf(msg.sender) >= totalPrice, "Insuficient funds");
-        require(
-            token.allowance(msg.sender, address(this)) >= totalPrice,
-            "Insuficient Allowance"
-        );
+        require(token.allowance(msg.sender, address(this)) >= totalPrice, "Insuficient Allowance");
 
         token.transferFrom(msg.sender, address(this), totalPrice);
         pot += totalPrice;
@@ -108,9 +93,7 @@ contract Raffle {
     }
 
     /// Function to calculate the timestamp X days from now
-    function getFutureTimestamp(
-        uint8 daysFromNow
-    ) private view returns (uint256) {
+    function getFutureTimestamp(uint8 daysFromNow) private view returns (uint256) {
         require(daysFromNow > 0, "Future timestamp must be at least 1 day");
         // Convert days to seconds
         uint256 futureTimestamp = block.timestamp + (daysFromNow * 1 days);
@@ -122,17 +105,7 @@ contract Raffle {
 
     function random() private returns (uint) {
         counter++;
-        return
-            uint(
-                keccak256(
-                    abi.encodePacked(
-                        block.prevrandao,
-                        block.timestamp,
-                        players,
-                        counter
-                    )
-                )
-            );
+        return uint(keccak256(abi.encodePacked(block.prevrandao, block.timestamp, players, counter)));
     }
 
     function pickRandomWinner() private returns (address) {
@@ -144,10 +117,7 @@ contract Raffle {
     /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
     function finishRaffle() public returns (address) {
         require(msg.sender == owner, "Invoker must be the owner");
-        require(
-            block.timestamp > raffleEndDate,
-            "End date has not being reached yet"
-        );
+        require(block.timestamp > raffleEndDate, "End date has not being reached yet");
         require(pot > 0, "The pot is empty. Raffle is invalid");
         require(winner == address(0), "A winner has already been selected");
 

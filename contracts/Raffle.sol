@@ -19,7 +19,7 @@ contract Raffle {
     /// Timestamp of when the raffle ends
     uint public immutable raffleEndDate;
     /// Total amount of the tokens in the contract
-    uint public immutable pot;
+    uint public pot;
     /// Price of an individual ticket
     uint public immutable ticketPrice;
     /// Price of 10 tickets

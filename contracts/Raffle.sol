@@ -1,22 +1,44 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Author @Bullrich
+/// @title Raffle contract to start a raffle with as many users as possible
+/// @author @Bullrich
+/// @notice Only the deployer of the contract can finish the raffle
+/// @custom:security-contact javier+raffle@bullrich.dev
 contract Raffle {
+    /// Array with all the players participating. Each element represents a ticket
     address[] public players;
-    address private owner;
-    address public donationAddress;
-    uint public raffleEndDate;
+    /// Address of the deployer of the contract.
+    /// @notice This is the user that can finalize the raffle and receives the commision
+    address private immutable owner;
+    /// Address of the charity that will receive the tokens
+    address public immutable donationAddress;
+    /// Timestamp of when the raffle ends
+    uint public immutable raffleEndDate;
+    /// Total amount of the tokens in the contract
     uint public pot;
-    uint public ticketPrice;
-    uint public price10Tickets;
-    uint public price100Tickets;
-    IERC20Metadata public token;
+    /// Price of an individual ticket
+    uint public immutable ticketPrice;
+    /// Price of 10 tickets
+    /// @notice the price is lower than actually buying 10 tickets individually to attract more purchases
+    uint public immutable price10Tickets;
+    /// Price of 100 tickets
+    /// @notice the price is lower than actually buying 100 tickets individually to attract more purchases
+    uint public immutable price100Tickets;
+    /// Token used in the contract as the currency
+    IERC20Metadata public immutable token;
 
+    /// Address of the winner
+    /// @dev this value is set up only after the raffle end
     address public winner;
 
+    /// @param donation Address that will receive the donation once the raffle ends
+    /// @param _ticketPrice Price of each ticket (without the decimals)
+    /// @param daysToEndDate Duration of the Raffle (in days)
+    /// @param _token Address of the ERC20 token that will be used in the Raffle
     constructor(
         address donation,
         uint _ticketPrice,
@@ -28,7 +50,7 @@ contract Raffle {
             block.timestamp < raffleEndDate,
             "Unlock time should be in the future"
         );
-        owner = payable(msg.sender);
+        owner = msg.sender;
         donationAddress = donation;
         token = _token;
         ticketPrice = _ticketPrice * (10 ** token.decimals());
@@ -36,6 +58,9 @@ contract Raffle {
         price100Tickets = ticketPrice * 60;
     }
 
+    /// Utility method used to buy any given amount of tickets
+    /// @param amountOfTickets current amount of tickets (must be bigger than 0)
+    /// @param totalPrice Price of the collection of tickets (must be at least the price of one ticket)
     function buyCollectionOfTickets(
         uint amountOfTickets,
         uint totalPrice
@@ -57,18 +82,23 @@ contract Raffle {
         return amountOfTickets;
     }
 
-    function buySingleTicket() public payable returns (uint) {
+    /// Buy an individual ticket
+    function buySingleTicket() public returns (uint) {
         return buyCollectionOfTickets(1, ticketPrice);
     }
 
-    function buy10Tickets() public payable returns (uint) {
+    /// Buy a collection of 10 tickets
+    function buy10Tickets() public returns (uint) {
         return buyCollectionOfTickets(10, price10Tickets);
     }
 
-    function buy100Tickets() public payable returns (uint) {
+    /// Buy a collection of 100 tickets
+    function buy100Tickets() public returns (uint) {
         return buyCollectionOfTickets(100, price100Tickets);
     }
 
+    /// Check how many tickets the current user has
+    /// @return amount of tickets the user owns
     function countUserTickets() public view returns (uint) {
         uint tickets = 0;
         for (uint256 i = 0; i < players.length; i++) {
@@ -77,7 +107,7 @@ contract Raffle {
         return tickets;
     }
 
-    // Function to calculate the timestamp X days from now
+    /// Function to calculate the timestamp X days from now
     function getFutureTimestamp(
         uint8 daysFromNow
     ) private view returns (uint256) {
@@ -87,7 +117,8 @@ contract Raffle {
         return futureTimestamp;
     }
 
-    uint counter = 1;
+    /// Value used to generate randomness
+    uint private counter = 1;
 
     function random() private returns (uint) {
         counter++;
@@ -109,6 +140,8 @@ contract Raffle {
         return players[index];
     }
 
+    /// Method used to finish a raffle
+    /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
     function finishRaffle() public returns (address) {
         require(msg.sender == owner, "Invoker must be the owner");
         require(

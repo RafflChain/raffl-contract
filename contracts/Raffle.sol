@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-// Author @Bullrich
 /// @title Raffle contract to start a raffle with as many users as possible
 /// @author @Bullrich
 /// @notice Only the deployer of the contract can finish the raffle

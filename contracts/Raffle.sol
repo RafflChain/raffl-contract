@@ -118,7 +118,7 @@ contract Raffle {
     }
 
     /// Value used to generate randomness
-    uint counter = 1;
+    uint private counter = 1;
 
     function random() private returns (uint) {
         counter++;

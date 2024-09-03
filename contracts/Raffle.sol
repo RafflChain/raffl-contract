@@ -111,6 +111,18 @@ contract Raffle {
         return players[index];
     }
 
+    /// See what would be the prize pool with the current treasury
+    function prizePool() public view returns (uint) {
+        return pot / 2;
+    }
+
+    /// See what amount would be donated to the charity with the current treasury
+    function donationAmount() public view returns (uint) {
+        uint halfOfPot = prizePool();
+        uint commision = (halfOfPot / 100) * 5;
+        return halfOfPot - commision;
+    }
+
     /// Method used to finish a raffle
     /// @param donationAddress Address of the charity that will receive the tokens
     /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
@@ -122,10 +134,14 @@ contract Raffle {
 
         winner = pickRandomWinner();
         // Divide into parts
-        uint halfOfPot = pot / 2;
+        uint halfOfPot = prizePool();
+        uint donation = donationAmount();
+        uint commision = (pot - halfOfPot) - donation;
+        // Send to the winner
         token.transfer(winner, halfOfPot);
-        uint commision = (halfOfPot / 100) * 5;
-        token.transfer(donationAddress, halfOfPot - commision);
+        // Send to the charity address
+        token.transfer(donationAddress, donation);
+        // Get the commision
         token.transfer(owner, commision);
 
         return winner;

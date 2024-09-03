@@ -11,14 +11,12 @@ export default buildModule("Deployment", (m) => {
     return input;
   });
   const env = envsafe({
-    DONATION: address(),
     PRICE: num(),
     DURATION: num(),
     TOKEN: address(),
   });
 
   const raffle = m.contract("Raffle", [
-    env.DONATION,
     env.PRICE,
     env.DURATION,
     env.TOKEN,

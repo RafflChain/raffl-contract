@@ -32,15 +32,13 @@ contract Raffle {
     /// @dev this value is set up only after the raffle end
     address public winner;
 
-    /// @param donation Address that will receive the donation once the raffle ends
     /// @param _ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
     /// @param _token Address of the ERC20 token that will be used in the Raffle
-    constructor(address donation, uint _ticketPrice, uint8 daysToEndDate, IERC20Metadata _token) {
+    constructor(uint _ticketPrice, uint8 daysToEndDate, IERC20Metadata _token) {
         raffleEndDate = getFutureTimestamp(daysToEndDate);
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
-        donationAddress = donation;
         token = _token;
         ticketPrice = _ticketPrice * (10 ** token.decimals());
         price10Tickets = ticketPrice * 8;

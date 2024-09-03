@@ -16,11 +16,7 @@ export default buildModule("Deployment", (m) => {
     TOKEN: address(),
   });
 
-  const raffle = m.contract("Raffle", [
-    env.PRICE,
-    env.DURATION,
-    env.TOKEN,
-  ]);
+  const raffle = m.contract("Raffle", [env.PRICE, env.DURATION, env.TOKEN]);
 
   return { raffle };
 });

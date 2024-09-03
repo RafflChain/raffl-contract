@@ -13,8 +13,6 @@ contract Raffle {
     /// Address of the deployer of the contract.
     /// @notice This is the user that can finalize the raffle and receives the commision
     address private immutable owner;
-    /// Address of the charity that will receive the tokens
-    address public immutable donationAddress;
     /// Timestamp of when the raffle ends
     uint public immutable raffleEndDate;
     /// Total amount of the tokens in the contract
@@ -114,8 +112,9 @@ contract Raffle {
     }
 
     /// Method used to finish a raffle
+    /// @param donationAddress Address of the charity that will receive the tokens
     /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
-    function finishRaffle() public returns (address) {
+    function finishRaffle(address donationAddress) public returns (address) {
         require(msg.sender == owner, "Invoker must be the owner");
         require(block.timestamp > raffleEndDate, "End date has not being reached yet");
         require(pot > 0, "The pot is empty. Raffle is invalid");

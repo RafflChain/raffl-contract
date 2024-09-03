@@ -13,8 +13,6 @@ contract Raffle {
     /// Address of the deployer of the contract.
     /// @notice This is the user that can finalize the raffle and receives the commision
     address private immutable owner;
-    /// Address of the charity that will receive the tokens
-    address public immutable donationAddress;
     /// Timestamp of when the raffle ends
     uint public immutable raffleEndDate;
     /// Total amount of the tokens in the contract
@@ -34,15 +32,13 @@ contract Raffle {
     /// @dev this value is set up only after the raffle end
     address public winner;
 
-    /// @param donation Address that will receive the donation once the raffle ends
     /// @param _ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
     /// @param _token Address of the ERC20 token that will be used in the Raffle
-    constructor(address donation, uint _ticketPrice, uint8 daysToEndDate, IERC20Metadata _token) {
+    constructor(uint _ticketPrice, uint8 daysToEndDate, IERC20Metadata _token) {
         raffleEndDate = getFutureTimestamp(daysToEndDate);
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
-        donationAddress = donation;
         token = _token;
         ticketPrice = _ticketPrice * (10 ** token.decimals());
         price10Tickets = ticketPrice * 8;
@@ -113,9 +109,22 @@ contract Raffle {
         return players[index];
     }
 
+    /// See what would be the prize pool with the current treasury
+    function prizePool() public view returns (uint) {
+        return pot / 2;
+    }
+
+    /// See what amount would be donated to the charity with the current treasury
+    function donationAmount() public view returns (uint) {
+        uint halfOfPot = prizePool();
+        uint commision = (halfOfPot / 100) * 5;
+        return halfOfPot - commision;
+    }
+
     /// Method used to finish a raffle
+    /// @param donationAddress Address of the charity that will receive the tokens
     /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
-    function finishRaffle() public returns (address) {
+    function finishRaffle(address donationAddress) public returns (address) {
         require(msg.sender == owner, "Invoker must be the owner");
         require(block.timestamp > raffleEndDate, "End date has not being reached yet");
         require(pot > 0, "The pot is empty. Raffle is invalid");
@@ -123,10 +132,14 @@ contract Raffle {
 
         winner = pickRandomWinner();
         // Divide into parts
-        uint halfOfPot = pot / 2;
+        uint halfOfPot = prizePool();
+        uint donation = donationAmount();
+        uint commision = (pot - halfOfPot) - donation;
+        // Send to the winner
         token.transfer(winner, halfOfPot);
-        uint commision = (halfOfPot / 100) * 5;
-        token.transfer(donationAddress, halfOfPot - commision);
+        // Send to the charity address
+        token.transfer(donationAddress, donation);
+        // Get the commision
         token.transfer(owner, commision);
 
         return winner;

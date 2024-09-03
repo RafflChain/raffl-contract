@@ -19,10 +19,6 @@ on:
         required: true
         type: number
         default: 30
-      donation:
-        description: "Donation address"
-        required: true
-        type: string
       token:
         description: "Address of the ERC20 token"
         required: true
@@ -57,7 +53,6 @@ jobs:
       - name: Run deployment script
         run: npx hardhat ignition deploy ignition/modules/Raffle.ts --network sepolia --verify
         env:
-          DONATION: ${{ inputs.donation }}
           PRICE: ${{ inputs.price }}
           TOKEN: ${{ inputs.token }}
           DURATION: ${{ inputs.duration }}

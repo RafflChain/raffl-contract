@@ -4,6 +4,7 @@ import {
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
+import { Raffle } from "../typechain-types";
 
 describe("Raffle", function () {
   const PRICE_10_TICKET_MULTIPLIER = 8n;
@@ -61,9 +62,9 @@ describe("Raffle", function () {
     it("Should fail if the deployment time is not in the future", async () => {
       const { token } = await loadFixture(deployRaffleFixture);
       const Raffle = await hre.ethers.getContractFactory("Raffle");
-      await expect(
-        Raffle.deploy(10, 0, token),
-      ).to.rejectedWith("Future timestamp must be at least 1 day");
+      await expect(Raffle.deploy(10, 0, token)).to.rejectedWith(
+        "Future timestamp must be at least 1 day",
+      );
     });
 
     it("Should set the token address", async () => {
@@ -386,7 +387,7 @@ describe("Raffle", function () {
           .approve(
             await raffle.getAddress(),
             ticketPrice *
-            (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
+              (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
           );
         // Buy 1 ticket and verify that the player has 1
         await raffle.connect(player).buySingleTicket();
@@ -445,22 +446,60 @@ describe("Raffle", function () {
         );
         expect(await raffle.pot()).to.equal(
           ticketPrice *
-          (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
+            (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
         );
         expect(await token.balanceOf(rAddress)).to.equal(
           ticketPrice *
-          (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
+            (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
         );
       });
+    });
+  });
+
+  describe("Prize", () => {
+    let raffleInstance: Raffle;
+    let price: bigint;
+
+    beforeEach(async () => {
+      const { raffle, token, players, ticketPrice } =
+        await loadFixture(deployRaffleFixture);
+      price = ticketPrice;
+      const [player] = players;
+      expect(await raffle.pot()).to.equal(0);
+      const rAddress = await raffle.getAddress();
+      await token
+        .connect(player)
+        .approve(rAddress, ticketPrice * PRICE_10_TICKET_MULTIPLIER);
+      await raffle.connect(player).buy10Tickets();
+      raffleInstance = raffle;
+    });
+
+    it("Should show the correct pot size", async () => {
+      expect(await raffleInstance.pot()).to.equal(
+        price * PRICE_10_TICKET_MULTIPLIER,
+      );
+    });
+
+    it("Should show correct prize amount", async () => {
+      expect(await raffleInstance.prizePool()).to.equal(
+        (price * PRICE_10_TICKET_MULTIPLIER) / 2n,
+      );
+    });
+
+    it("Should show the correct donation amount", async () => {
+      const commision = ((price * PRICE_10_TICKET_MULTIPLIER) / 2n / 100n) * 5n;
+      expect(await raffleInstance.donationAmount()).to.equal(
+        (price * PRICE_10_TICKET_MULTIPLIER) / 2n - commision,
+      );
     });
   });
 
   describe("Finish Raffle", () => {
     it("Should fail if the owner is not closing the raffle", async () => {
       const { raffle, players } = await loadFixture(deployRaffleFixture);
-      await expect(raffle.connect(players[0]).finishRaffle(players[0])).to.rejectedWith(
-        "Invoker must be the owner",
-      );
+      await expect(
+        raffle.connect(players[0]).finishRaffle(players[0]),
+      ).to.rejectedWith("Invoker must be the owner");
     });
 
     it("Should fail if the closing time has not being reached", async () => {
@@ -493,11 +532,9 @@ describe("Raffle", function () {
       expect(pot).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
 
       time.increaseTo(generateDateInTheFuture(10));
-      await expect(raffle.connect(owner).finishRaffle(random)).to.changeTokenBalance(
-        token,
-        player,
-        pot / 2n,
-      );
+      await expect(
+        raffle.connect(owner).finishRaffle(random),
+      ).to.changeTokenBalance(token, player, pot / 2n);
     });
 
     it("Should distribute half of the pot to the donation campaign (minus comission)", async () => {
@@ -516,11 +553,9 @@ describe("Raffle", function () {
 
       time.increaseTo(generateDateInTheFuture(10));
       const comission = (pot / 2n / 100n) * 5n;
-      await expect(raffle.connect(owner).finishRaffle(donation)).to.changeTokenBalance(
-        token,
-        donation,
-        pot / 2n - comission,
-      );
+      await expect(
+        raffle.connect(owner).finishRaffle(donation),
+      ).to.changeTokenBalance(token, donation, pot / 2n - comission);
     });
 
     it("Should distribute the pot between winner, donation campaign and comission", async () => {
@@ -539,7 +574,9 @@ describe("Raffle", function () {
 
       time.increaseTo(generateDateInTheFuture(10));
       const comission = (pot / 2n / 100n) * 5n;
-      await expect(raffle.connect(owner).finishRaffle(donation)).to.changeTokenBalances(
+      await expect(
+        raffle.connect(owner).finishRaffle(donation),
+      ).to.changeTokenBalances(
         token,
         [player, donation, owner],
         [pot / 2n, pot / 2n - comission, comission],
@@ -560,11 +597,9 @@ describe("Raffle", function () {
       const pot = await raffle.pot();
 
       time.increaseTo(generateDateInTheFuture(10));
-      await expect(raffle.connect(owner).finishRaffle(random)).to.changeTokenBalance(
-        token,
-        player,
-        pot / 2n,
-      );
+      await expect(
+        raffle.connect(owner).finishRaffle(random),
+      ).to.changeTokenBalance(token, player, pot / 2n);
 
       expect(await raffle.winner()).to.equal(player.address);
     });
@@ -583,11 +618,9 @@ describe("Raffle", function () {
       const pot = await raffle.pot();
 
       time.increaseTo(generateDateInTheFuture(10));
-      await expect(raffle.connect(owner).finishRaffle(random)).to.changeTokenBalance(
-        token,
-        player,
-        pot / 2n,
-      );
+      await expect(
+        raffle.connect(owner).finishRaffle(random),
+      ).to.changeTokenBalance(token, player, pot / 2n);
 
       expect(await raffle.winner()).to.equal(player.address);
 

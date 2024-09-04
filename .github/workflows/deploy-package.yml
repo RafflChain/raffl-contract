@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploying contract
+    name: Deploying package
     steps:
       - name: Checkout
         uses: actions/checkout@v4

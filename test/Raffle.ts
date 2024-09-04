@@ -387,7 +387,7 @@ describe("Raffle", function () {
           .approve(
             await raffle.getAddress(),
             ticketPrice *
-            (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
+              (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
           );
         // Buy 1 ticket and verify that the player has 1
         await raffle.connect(player).buySingleTicket();
@@ -446,11 +446,11 @@ describe("Raffle", function () {
         );
         expect(await raffle.pot()).to.equal(
           ticketPrice *
-          (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
+            (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
         );
         expect(await token.balanceOf(rAddress)).to.equal(
           ticketPrice *
-          (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
+            (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
         );
       });
     });

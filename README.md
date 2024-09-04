@@ -14,7 +14,24 @@ Available commands:
 - `npm run test`: Test the smart contract.
   - You can add `REPORT_GAS=true` to the test.
 - `npx hardhat pub-type`: Deploy contract interface to npm.
-- `npx hardhat ignition deploy ignition/modules/Raffle.ts`: Deploy an instance of the contract into the chain.
+
+## Deploy contract
+
+### Raffle
+
+You need to run `npx hardhat ignition deploy ignition/modules/Raffle.ts --network sepolia --verify` with the following env variables:
+
+- `PRICE`: Price of the tickets **without** the decimals.
+- `DURATION`: duration of the Raffle in days.
+- `TOKEN`: Address of the `ERC20` token.
+
+### Raffle Token
+
+This is a test token used to experiment with the Raffle contract on the sepolia network.
+
+You need to run the following command: `npx hardhat ignition deploy ignition/modules/Token.ts --network sepolia --verify`.
+
+You can also use the `workflow_dispatch` to run it for you: [![Deploy Contract](https://github.com/Bullrich/raffle-contract/actions/workflows/deploy-contract.yml/badge.svg?event=workflow_dispatch)](https://github.com/Bullrich/raffle-contract/actions/workflows/deploy-contract.yml)
 
 ## Installation
 

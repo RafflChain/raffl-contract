@@ -11,7 +11,7 @@ describe("Raffle", function () {
   const PRICE_100_TICKET_MULTIPLIER = 60n;
 
   async function deployRaffleFixture() {
-    const ticketPrice = 5n;
+    const ticketPrice = 2n;
     const unlockDays = 2;
 
     // Contracts are deployed using the first signer/account by default
@@ -19,14 +19,14 @@ describe("Raffle", function () {
     const [owner] = signers;
     const players = signers.slice(2);
 
-    const DemoToken = await hre.ethers.getContractFactory("DemoToken");
+    const DemoToken = await hre.ethers.getContractFactory("RaffleToken");
     const token = await DemoToken.deploy();
     const tokenAddress = await token.getAddress();
 
     const decimals: bigint = await token.decimals();
-    for (const player of players) {
+    for (let i = 0; i < 5; i++) {
       const transferAmount = ticketPrice * 10n ** decimals * 100n;
-      await token.connect(owner).transfer(player.address, transferAmount);
+      await token.connect(owner).transfer(players[i].address, transferAmount);
     }
 
     const Raffle = await hre.ethers.getContractFactory("Raffle");

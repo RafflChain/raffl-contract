@@ -9,4 +9,8 @@ contract RaffleToken is ERC20 {
     constructor() ERC20("Raffle Test Token", "RTT") {
         _mint(msg.sender, 1000 * (10 ** decimals()));
     }
+
+    function decimals() public view virtual override returns (uint8) {
+        return 6;
+    }
 }

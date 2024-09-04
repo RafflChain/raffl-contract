@@ -18,12 +18,15 @@ Available commands:
 ## Deploy contract
 
 ### Raffle
+
 You need to run `npx hardhat ignition deploy ignition/modules/Raffle.ts --network sepolia --verify` with the following env variables:
- - `PRICE`: Price of the tickets **without** the decimals.
- - `DURATION`: duration of the Raffle in days.
- - `TOKEN`: Address of the `ERC20` token.
+
+- `PRICE`: Price of the tickets **without** the decimals.
+- `DURATION`: duration of the Raffle in days.
+- `TOKEN`: Address of the `ERC20` token.
 
 ### Raffle Token
+
 This is a test token used to experiment with the Raffle contract on the sepolia network.
 
 You need to run the following command: `npx hardhat ignition deploy ignition/modules/Token.ts --network sepolia --verify`.

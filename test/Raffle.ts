@@ -182,6 +182,12 @@ describe("Raffle", function () {
         expect(await raffle.pot()).to.equal(ticketPrice * 2n);
         expect(await token.balanceOf(rAddress)).to.equal(ticketPrice * 2n);
       });
+
+      it("Should not allow owner to participate in the Raffle", async () => {
+        const { raffle, owner } =
+          await loadFixture(deployRaffleFixture);
+        await expect(raffle.connect(owner).buySingleTicket()).to.rejectedWith("Owner can not participate in the Raffle");
+      })
     });
 
     describe("10 tickets", () => {
@@ -311,6 +317,12 @@ describe("Raffle", function () {
         expect(await raffle.pot()).to.equal(ticketPrice * 16n);
         expect(await token.balanceOf(rAddress)).to.equal(ticketPrice * 16n);
       });
+
+      it("Should not allow owner to participate in the Raffle", async () => {
+        const { raffle, owner } =
+          await loadFixture(deployRaffleFixture);
+        await expect(raffle.connect(owner).buy10Tickets()).to.rejectedWith("Owner can not participate in the Raffle");
+      })
     });
 
     describe("100 tickets", () => {
@@ -387,7 +399,7 @@ describe("Raffle", function () {
           .approve(
             await raffle.getAddress(),
             ticketPrice *
-              (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
+            (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
           );
         // Buy 1 ticket and verify that the player has 1
         await raffle.connect(player).buySingleTicket();
@@ -446,13 +458,19 @@ describe("Raffle", function () {
         );
         expect(await raffle.pot()).to.equal(
           ticketPrice *
-            (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
+          (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
         );
         expect(await token.balanceOf(rAddress)).to.equal(
           ticketPrice *
-            (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
+          (PRICE_100_TICKET_MULTIPLIER + PRICE_10_TICKET_MULTIPLIER + 1n),
         );
       });
+
+      it("Should not allow owner to participate in the Raffle", async () => {
+        const { raffle, owner } =
+          await loadFixture(deployRaffleFixture);
+        await expect(raffle.connect(owner).buy100Tickets()).to.rejectedWith("Owner can not participate in the Raffle");
+      })
     });
   });
 

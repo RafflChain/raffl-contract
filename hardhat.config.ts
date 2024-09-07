@@ -16,6 +16,20 @@ const env = envsafe({
   }),
 });
 
+const sepoliaNetwork = vars.has("SEPOLIA_PRIVATE_KEY")
+  ? {
+      url: `https://eth-sepolia.g.alchemy.com/v2/${vars.get("ALCHEMY_API_KEY")}`,
+      accounts: [vars.get("SEPOLIA_PRIVATE_KEY")],
+    }
+  : undefined;
+
+const ethereumNetwork = vars.has("MAINNET_PRIVATE_KEY")
+  ? {
+      url: `https://eth-mainnet.g.alchemy.com/v2/${vars.get("ALCHEMY_API_KEY")}`,
+      accounts: [vars.get("MAINNET_PRIVATE_KEY")],
+    }
+  : undefined;
+
 const config: HardhatUserConfig = {
   solidity: "0.8.24",
   etherscan: vars.has("ETHERSCAN_API_KEY")
@@ -23,17 +37,13 @@ const config: HardhatUserConfig = {
         apiKey: vars.get("ETHERSCAN_API_KEY"),
       }
     : {},
-  networks: vars.has("SEPOLIA_PRIVATE_KEY")
-    ? {
-        sepolia: {
-          url: `https://eth-sepolia.g.alchemy.com/v2/${vars.get("ALCHEMY_API_KEY")}`,
-          accounts: [vars.get("SEPOLIA_PRIVATE_KEY")],
-        },
-      }
-    : {},
+  networks: {
+    sepolia: sepoliaNetwork,
+    mainnet: ethereumNetwork,
+  },
   publishTypechain: {
     name: "raffle-contract",
-    repository: "https://github.com/Bullrich/raffle-contract",
+    repository: "https://github.com/RafflChain/raffl-contract",
     version: env.VERSION,
     iifeGlobalObjectName: "mock",
     ignoreDeployedNetworks: ["localhost"],

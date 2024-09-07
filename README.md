@@ -1,6 +1,6 @@
 # Raffle Contract
 
-[![Test](https://github.com/Bullrich/raffle-contract/actions/workflows/test.yml/badge.svg?branch=main&event=push)](https://github.com/Bullrich/raffle-contract/actions/workflows/test.yml)
+[![Test](https://github.com/RafflChain/raffl-contract/actions/workflows/test.yml/badge.svg?branch=main&event=push)](https://github.com/RafflChain/raffl-contract/actions/workflows/test.yml)
 
 This project contains the raffle smart contract and all of the tests for the [Raffl Chain](https://rafflchain.com).
 
@@ -31,7 +31,7 @@ This is a test token used to experiment with the Raffle contract on the sepolia 
 
 You need to run the following command: `npx hardhat ignition deploy ignition/modules/Token.ts --network sepolia --verify`.
 
-You can also use the `workflow_dispatch` to run it for you: [![Deploy Contract](https://github.com/Bullrich/raffle-contract/actions/workflows/deploy-contract.yml/badge.svg?event=workflow_dispatch)](https://github.com/Bullrich/raffle-contract/actions/workflows/deploy-contract.yml)
+You can also use the `workflow_dispatch` to run it for you: [![Deploy Contract](https://github.com/RafflChain/raffl-contract/actions/workflows/deploy-contract.yml/badge.svg?event=workflow_dispatch)](https://github.com/RafflChain/raffl-contract/actions/workflows/deploy-contract.yml)
 
 ## Installation
 

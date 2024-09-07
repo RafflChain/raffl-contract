@@ -64,7 +64,7 @@ jobs:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
 
       - name: Run deployment script
-        run: npx hardhat ignition deploy ignition/modules/Raffle.ts --network sepolia --verify
+        run: npx hardhat ignition deploy ignition/modules/Raffle.ts --network ${{ inputs.network }} --verify
         env:
           PRICE: ${{ inputs.price }}
           TOKEN: ${{ inputs.token }}

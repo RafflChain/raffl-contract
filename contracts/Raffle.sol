@@ -52,6 +52,7 @@ contract Raffle {
         require(block.timestamp < raffleEndDate, "Raffle is over");
         require(amountOfTickets > 0, "Can not buy 0 tickets");
         require(totalPrice >= ticketPrice, "Price is too low");
+        require(msg.sender != owner, "Owner can not participate in the Raffle");
         require(token.balanceOf(msg.sender) >= totalPrice, "Insuficient funds");
         require(token.allowance(msg.sender, address(this)) >= totalPrice, "Insuficient Allowance");
 

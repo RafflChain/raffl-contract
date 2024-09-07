@@ -2,7 +2,7 @@
 
 [![Test](https://github.com/Bullrich/raffle-contract/actions/workflows/test.yml/badge.svg?branch=main&event=push)](https://github.com/Bullrich/raffle-contract/actions/workflows/test.yml)
 
-This project contains the raffle smart contract and all of the tests.
+This project contains the raffle smart contract and all of the tests for the [Raffl Chain](https://rafflchain.com).
 
 It provides also the deployment of the contract and the generation of the types.
 

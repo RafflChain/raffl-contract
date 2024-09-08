@@ -4,6 +4,8 @@
 
 This project contains the raffle smart contract and all of the tests for the [Raffl Chain](https://rafflchain.com).
 
+Find the code for the client here: [RafflChain/client](https://github.com/RafflChain/client)
+
 It provides also the deployment of the contract and the generation of the types.
 
 This project was built using [`hardhat`](https://hardhat.org/).

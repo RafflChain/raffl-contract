@@ -6,7 +6,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 /// @title Raffle contract to start a raffle with as many users as possible
 /// @author @Bullrich
 /// @notice Only the deployer of the contract can finish the raffle
-/// @custom:security-contact javier+raffle@bullrich.dev
+/// @custom:security-contact info+security@rafflchain.com
 contract Raffle {
     /// Array with all the players participating. Each element represents a ticket
     address[] public players;
@@ -79,6 +79,15 @@ contract Raffle {
         return buyCollectionOfTickets(100, price100Tickets);
     }
 
+    /// User obtains a free ticket
+    /// @notice only the fist ticket is free
+    function getFreeTicket() public returns (uint) {
+        require(countUserTickets() == 0, "User already owns tickets");
+        require(msg.sender != owner, "Owner can not participate in the Raffle");
+        players.push(msg.sender);
+        return 1;
+    }
+
     /// Check how many tickets the current user has
     /// @return amount of tickets the user owns
     function countUserTickets() public view returns (uint) {
@@ -95,6 +104,13 @@ contract Raffle {
         // Convert days to seconds
         uint256 futureTimestamp = block.timestamp + (daysFromNow * 1 days);
         return futureTimestamp;
+    }
+
+    /// List all the tickets in the system
+    /// @notice Can only be invoked by the contract owner
+    function listSoldTickets() public view returns (uint256) {
+        require(msg.sender == owner, "Invoker must be the owner");
+        return players.length;
     }
 
     /// Value used to generate randomness

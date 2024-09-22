@@ -85,6 +85,23 @@ describe("Raffle", function () {
       );
       expect(await raffle.price100Tickets()).to.equal(ticketPrice * 60n);
     });
+
+    it("Should set the pot to 0", async () => {
+      const { raffle, owner } = await loadFixture(deployRaffleFixture);
+      expect(await raffle.pot()).to.equal(0);
+    });
+
+    it("Should set sold tickets to 0", async () => {
+      const { raffle, owner } = await loadFixture(deployRaffleFixture);
+      expect(await raffle.connect(owner).listSoldTickets()).to.equal(0);
+    });
+
+    it("Should not allow external users to see how many tickets are sold", async () => {
+      const { raffle, players } = await loadFixture(deployRaffleFixture);
+      await expect(
+        raffle.connect(players[0]).listSoldTickets(),
+      ).to.be.rejectedWith("Invoker must be the owner");
+    });
   });
 
   describe("Buy tickets", () => {
@@ -233,6 +250,36 @@ describe("Raffle", function () {
           expect(await raffle.pot()).to.equal(ticketPrice * 2n * multiplier);
           expect(await token.balanceOf(rAddress)).to.equal(
             ticketPrice * 2n * multiplier,
+          );
+        });
+
+        it("Should increment the tickets sold when more people buy tickets", async () => {
+          const { raffle, token, owner, players, ticketPrice } =
+            await loadFixture(deployRaffleFixture);
+          const [player1, player2] = players;
+          expect(await raffle.pot()).to.equal(0);
+          const rAddress = await raffle.getAddress();
+          await token
+            .connect(player1)
+            .approve(rAddress, ticketPrice * multiplier);
+          await expect(purchase(raffle.connect(player1))).to.changeTokenBalance(
+            token,
+            player1,
+            -ticketPrice * multiplier,
+          );
+          expect(await raffle.connect(owner).listSoldTickets()).to.equal(
+            amount,
+          );
+          await token
+            .connect(player2)
+            .approve(rAddress, ticketPrice * multiplier);
+          await expect(purchase(raffle.connect(player2))).to.changeTokenBalance(
+            token,
+            player2,
+            -ticketPrice * multiplier,
+          );
+          expect(await raffle.connect(owner).listSoldTickets()).to.equal(
+            amount * 2,
           );
         });
 

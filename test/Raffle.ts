@@ -147,7 +147,6 @@ describe("Raffle", function () {
           await expect(purchase(raffle.connect(players[0]))).to.be.rejectedWith(
             "Insufficient Allowance",
           );
-          );
         });
 
         it("Should fail if it does not have enough tokens", async () => {
@@ -155,14 +154,15 @@ describe("Raffle", function () {
             await loadFixture(deployRaffleFixture);
           const [player, rando] = players;
           // We transfer all the tokens out of the player before hand
-          const playerBalance = await token.connect(player).balanceOf(player.address);
+          const playerBalance = await token
+            .connect(player)
+            .balanceOf(player.address);
           await token.connect(player).transfer(rando.address, playerBalance);
           await token
             .connect(player)
             .approve(await raffle.getAddress(), ticketPrice * 3n * multiplier);
           await expect(purchase(raffle.connect(players[0]))).to.be.rejectedWith(
             "Insufficient funds",
-          );
           );
         });
 

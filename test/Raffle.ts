@@ -88,6 +88,23 @@ describe("Raffle", function () {
   });
 
   describe("Buy tickets", () => {
+    describe("Free ticket", () => {
+      it("Should get a free ticket", async () => {
+        const { raffle, players } = await loadFixture(deployRaffleFixture);
+        const [player] = players;
+        await raffle.connect(player).getFreeTicket();
+        expect(await raffle.connect(player).countUserTickets()).to.equal(1);
+      });
+
+      it("Should increase the ticket count", async () => {
+        const { raffle, owner, players } =
+          await loadFixture(deployRaffleFixture);
+        const [player] = players;
+        await raffle.connect(player).getFreeTicket();
+        expect(await raffle.connect(owner).listSoldTickets()).to.equal(1);
+      });
+    });
+
     const conditions: {
       amount: number;
       multiplier: bigint;
@@ -223,6 +240,21 @@ describe("Raffle", function () {
           const { raffle, owner } = await loadFixture(deployRaffleFixture);
           await expect(purchase(raffle.connect(owner))).to.be.rejectedWith(
             "Owner cannot participate in the Raffle",
+          );
+        });
+
+        it("Should not allow to buy a free tickets after purchasing tickets", async () => {
+          const { raffle, players, token, ticketPrice } =
+            await loadFixture(deployRaffleFixture);
+
+          const [player] = players;
+          await token
+            .connect(player)
+            .approve(await raffle.getAddress(), ticketPrice * multiplier);
+          await purchase(raffle.connect(player));
+
+          await expect(raffle.getFreeTicket()).to.be.rejectedWith(
+            "User already owns tickets",
           );
         });
       });

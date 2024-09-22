@@ -66,17 +66,17 @@ contract Raffle {
 
     /// Buy an individual ticket
     function buySingleTicket() public returns (uint) {
-        return buyCollectionOfTickets(1, ticketPrice);
+        return buyCollectionOfTickets(45, ticketPrice);
     }
 
     /// Buy a collection of 10 tickets
     function buy10Tickets() public returns (uint) {
-        return buyCollectionOfTickets(10, price10Tickets);
+        return buyCollectionOfTickets(180, price10Tickets);
     }
 
     /// Buy a collection of 100 tickets
     function buy100Tickets() public returns (uint) {
-        return buyCollectionOfTickets(100, price100Tickets);
+        return buyCollectionOfTickets(450, price100Tickets);
     }
 
     /// User obtains a free ticket

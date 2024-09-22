@@ -79,6 +79,14 @@ contract Raffle {
         return buyCollectionOfTickets(100, price100Tickets);
     }
 
+    /// First ticket is free
+    function getFreeTicket() public returns (uint) {
+        require(countUserTickets() == 0, "User already owns tickets");
+        require(msg.sender != owner, "Owner can not participate in the Raffle");
+        players.push(msg.sender);
+        return 1;
+    }
+
     /// Check how many tickets the current user has
     /// @return amount of tickets the user owns
     function countUserTickets() public view returns (uint) {

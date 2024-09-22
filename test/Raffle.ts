@@ -185,7 +185,7 @@ describe("Raffle", function () {
         it("Should fail if the raffle end date has been reached", async () => {
           const { raffle, players } = await loadFixture(deployRaffleFixture);
           await time.increaseTo(generateDateInTheFuture(10));
-          await expect(purchase(raffle.connect(players[0]))).to.rejectedWith(
+          await expect(purchase(raffle.connect(players[0]))).to.be.rejectedWith(
             "Raffle is over",
           );
         });

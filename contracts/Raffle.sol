@@ -105,6 +105,13 @@ contract Raffle {
         return futureTimestamp;
     }
 
+    /// List all the tickets in the system
+    /// @notice Can only be invoked by the contract owner
+    function listSoldTickets() public view returns (uint256) {
+        require(msg.sender == owner, "Invoker must be the owner");
+        return players.length;
+    }
+
     /// Value used to generate randomness
     uint private counter = 1;
 

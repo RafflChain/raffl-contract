@@ -6,7 +6,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 /// @title Raffle contract to start a raffle with as many users as possible
 /// @author @Bullrich
 /// @notice Only the deployer of the contract can finish the raffle
-/// @custom:security-contact javier+raffle@bullrich.dev
+/// @custom:security-contact info+security@rafflchain.com
 contract Raffle {
     /// Array with all the players participating. Each element represents a ticket
     address[] public players;

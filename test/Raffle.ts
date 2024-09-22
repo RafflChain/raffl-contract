@@ -3,10 +3,9 @@ import {
   time,
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
+import { ContractTransactionResponse } from "ethers";
 import hre from "hardhat";
 import { Raffle } from "../typechain-types";
-import { TypedContractMethod } from "../typechain-types/common";
-import { ContractTransactionResponse } from "ethers";
 
 describe("Raffle", function () {
   const PRICE_10_TICKET_MULTIPLIER = 8n;

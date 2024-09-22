@@ -144,8 +144,9 @@ describe("Raffle", function () {
 
         it("Should fail if it does not have allowance", async () => {
           const { raffle, players } = await loadFixture(deployRaffleFixture);
-          await expect(purchase(raffle.connect(players[0]))).to.rejectedWith(
-            "Insuficient Allowance",
+          await expect(purchase(raffle.connect(players[0]))).to.be.rejectedWith(
+            "Insufficient Allowance",
+          );
           );
         });
 
@@ -154,13 +155,14 @@ describe("Raffle", function () {
             await loadFixture(deployRaffleFixture);
           const [player, rando] = players;
           // We transfer all the tokens out of the player before hand
-          const playerBalance = await token.connect(player).balanceOf(player);
+          const playerBalance = await token.connect(player).balanceOf(player.address);
           await token.connect(player).transfer(rando.address, playerBalance);
           await token
             .connect(player)
             .approve(await raffle.getAddress(), ticketPrice * 3n * multiplier);
-          await expect(purchase(raffle.connect(players[0]))).to.rejectedWith(
-            "Insuficient funds",
+          await expect(purchase(raffle.connect(players[0]))).to.be.rejectedWith(
+            "Insufficient funds",
+          );
           );
         });
 
@@ -172,17 +174,17 @@ describe("Raffle", function () {
           await token
             .connect(player)
             .approve(await raffle.getAddress(), ticketPrice * 2n * multiplier);
-          // Buy 1 ticket and verify that the player has 3
+          // Buy 1 ticket and verify that the player has 1 ticket
           await raffle.connect(player).buySingleTicket();
           expect(await raffle.countUserTickets()).to.equal(1);
-          // Buy more and verify that the player now has 2
+          // Buy more tickets and verify that the player now has amount + 1 tickets
           await purchase(raffle.connect(player));
           expect(await raffle.countUserTickets()).to.equal(amount + 1);
         });
 
         it("Should fail if the raffle end date has been reached", async () => {
           const { raffle, players } = await loadFixture(deployRaffleFixture);
-          time.increaseTo(generateDateInTheFuture(10));
+          await time.increaseTo(generateDateInTheFuture(10));
           await expect(purchase(raffle.connect(players[0]))).to.rejectedWith(
             "Raffle is over",
           );
@@ -219,8 +221,8 @@ describe("Raffle", function () {
 
         it("Should not allow owner to participate in the Raffle", async () => {
           const { raffle, owner } = await loadFixture(deployRaffleFixture);
-          await expect(purchase(raffle.connect(owner))).to.rejectedWith(
-            "Owner can not participate in the Raffle",
+          await expect(purchase(raffle.connect(owner))).to.be.rejectedWith(
+            "Owner cannot participate in the Raffle",
           );
         });
       });

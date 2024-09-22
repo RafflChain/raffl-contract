@@ -79,7 +79,8 @@ contract Raffle {
         return buyCollectionOfTickets(100, price100Tickets);
     }
 
-    /// First ticket is free
+    /// User obtains a free ticket
+    /// @notice only the fist ticket is free
     function getFreeTicket() public returns (uint) {
         require(countUserTickets() == 0, "User already owns tickets");
         require(msg.sender != owner, "Owner can not participate in the Raffle");

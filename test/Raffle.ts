@@ -128,17 +128,17 @@ describe("Raffle", function () {
       purchase: (contract: Raffle) => Promise<ContractTransactionResponse>;
     }[] = [
       {
-        amount: 1,
+        amount: 45,
         multiplier: 1n,
         purchase: (raffle) => raffle.buySingleTicket(),
       },
       {
-        amount: 10,
+        amount: 180,
         multiplier: PRICE_10_TICKET_MULTIPLIER,
         purchase: (raffle) => raffle.buy10Tickets(),
       },
       {
-        amount: 100,
+        amount: 450,
         multiplier: PRICE_100_TICKET_MULTIPLIER,
         purchase: (raffle) => raffle.buy100Tickets(),
       },

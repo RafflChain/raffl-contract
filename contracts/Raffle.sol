@@ -85,6 +85,14 @@ contract Raffle {
     function buyLargeTicketBundle() public returns (uint) {
         return buyCollectionOfTickets(largeBundle);
     }
+
+    /// Returns all the available bundles sorted from smaller to bigger
+    function getBundles() public view returns (Bundle[] memory) {
+        Bundle[] memory bundles = new Bundle[](3);
+        bundles[0] = smallBundle;
+        bundles[1] = mediumBundle;
+        bundles[2] = largeBundle;
+        return bundles;
     }
 
     /// User obtains a free ticket

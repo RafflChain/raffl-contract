@@ -90,10 +90,24 @@ describe("Raffle", function () {
 
     it("Should set the correct large ticket bundle", async () => {
       const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
-      const bundle = await raffle.bigBundle();
+      const bundle = await raffle.largeBundle();
 
       expect(bundle.price).to.equal(ticketPrice * 60n);
       expect(bundle.amount).to.equal(450);
+    });
+
+    it("Should set all the bundles correctly", async () => {
+      const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
+      const [small, medium, large] = await raffle.getBundles();
+
+      expect(small.amount).to.equal(45);
+      expect(small.price).to.equal(ticketPrice);
+
+      expect(medium.price).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
+      expect(medium.amount).to.equal(180);
+
+      expect(large.price).to.equal(ticketPrice * 60n);
+      expect(large.amount).to.equal(450);
     });
 
     it("Should set the pot to 0", async () => {
@@ -150,7 +164,7 @@ describe("Raffle", function () {
       {
         amount: 450,
         multiplier: PRICE_100_TICKET_MULTIPLIER,
-        purchase: (raffle) => raffle.buyBigTicketBundle(),
+        purchase: (raffle) => raffle.buyLargeTicketBundle(),
       },
     ];
 
@@ -433,7 +447,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_100_TICKET_MULTIPLIER,
         );
-      await raffle.connect(player).buyBigTicketBundle();
+      await raffle.connect(player).buyLargeTicketBundle();
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_100_TICKET_MULTIPLIER);
 

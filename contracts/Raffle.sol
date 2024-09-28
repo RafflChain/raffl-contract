@@ -55,7 +55,7 @@ contract Raffle {
 
     /// Utility method used to buy any given amount of tickets
     /// @param bundle the bundle that will be purchased
-    function buyCollectionOfTickets(Bundle bundle) private returns (uint) {
+    function buyCollectionOfTickets(Bundle memory bundle) private returns (uint) {
         require(block.timestamp < raffleEndDate, "Raffle is over");
         require(bundle.amount > 0, "Can not buy 0 tickets");
         require(msg.sender != owner, "Owner cannot participate in the Raffle");

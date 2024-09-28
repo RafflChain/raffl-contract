@@ -76,7 +76,7 @@ describe("Raffle", function () {
     it("Should set the correct small ticket bundle", async () => {
       const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
       const bundle = await raffle.smallBundle();
-      expect(bundle.amount).to.equal(45);
+      expect(bundle.amount).to.equal(1);
       expect(bundle.price).to.equal(ticketPrice);
     });
 
@@ -85,7 +85,7 @@ describe("Raffle", function () {
       const bundle = await raffle.mediumBundle();
 
       expect(bundle.price).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
-      expect(bundle.amount).to.equal(180);
+      expect(bundle.amount).to.equal(10);
     });
 
     it("Should set the correct large ticket bundle", async () => {
@@ -93,21 +93,21 @@ describe("Raffle", function () {
       const bundle = await raffle.largeBundle();
 
       expect(bundle.price).to.equal(ticketPrice * 60n);
-      expect(bundle.amount).to.equal(450);
+      expect(bundle.amount).to.equal(100);
     });
 
     it("Should set all the bundles correctly", async () => {
       const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
       const [small, medium, large] = await raffle.getBundles();
 
-      expect(small.amount).to.equal(45);
+      expect(small.amount).to.equal(1);
       expect(small.price).to.equal(ticketPrice);
 
       expect(medium.price).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
-      expect(medium.amount).to.equal(180);
+      expect(medium.amount).to.equal(10);
 
       expect(large.price).to.equal(ticketPrice * 60n);
-      expect(large.amount).to.equal(450);
+      expect(large.amount).to.equal(100);
     });
 
     it("Should set the pot to 0", async () => {
@@ -152,17 +152,17 @@ describe("Raffle", function () {
       purchase: (contract: Raffle) => Promise<ContractTransactionResponse>;
     }[] = [
       {
-        amount: 45,
+        amount: 1,
         multiplier: 1n,
         purchase: (raffle) => raffle.buySmallTicketBundle(),
       },
       {
-        amount: 180,
+        amount: 10,
         multiplier: PRICE_10_TICKET_MULTIPLIER,
         purchase: (raffle) => raffle.buyMediumTicketBundle(),
       },
       {
-        amount: 450,
+        amount: 100,
         multiplier: PRICE_100_TICKET_MULTIPLIER,
         purchase: (raffle) => raffle.buyLargeTicketBundle(),
       },

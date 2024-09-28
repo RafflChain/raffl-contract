@@ -37,7 +37,7 @@ contract Raffle {
     Bundle public mediumBundle;
     /// Price and amount of the big bundle
     /// @notice the final price should be discounted than buying the same amount of small bundles
-    Bundle public bigBundle;
+    Bundle public largeBundle;
 
     /// @param _ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
@@ -51,7 +51,7 @@ contract Raffle {
 
         smallBundle = Bundle(45, ticketPrice);
         mediumBundle = Bundle(180, ticketPrice * 8);
-        bigBundle = Bundle(450, ticketPrice * 60);
+        largeBundle = Bundle(450, ticketPrice * 60);
     }
 
     /// Utility method used to buy any given amount of tickets
@@ -82,8 +82,9 @@ contract Raffle {
     }
 
     /// Buy a collection of 100 tickets
-    function buyBigTicketBundle() public returns (uint) {
-        return buyCollectionOfTickets(bigBundle);
+    function buyLargeTicketBundle() public returns (uint) {
+        return buyCollectionOfTickets(largeBundle);
+    }
     }
 
     /// User obtains a free ticket

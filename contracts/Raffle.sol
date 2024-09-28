@@ -24,18 +24,19 @@ contract Raffle {
     /// @dev this value is set up only after the raffle end
     address public winner;
 
+    /// Container of ticket information.
     struct Bundle {
         uint amount;
         uint price;
     }
 
-    // Price and amount of the small bundle
+    /// Price and amount of the small bundle
     Bundle public smallBundle;
-    // Price and amount of the small bundle
-    /// @notice the price is lower than actually buying the tickets individually to attract more purchases
+    /// Price and amount of the medium bundle
+    /// @notice the final price should be discounted than buying the same amount of small bundles
     Bundle public mediumBundle;
-    // Price and amount of the small bundle
-    /// @notice the price is lower than actually buying the tickets individually to attract more purchases
+    /// Price and amount of the big bundle
+    /// @notice the final price should be discounted than buying the same amount of small bundles
     Bundle public bigBundle;
 
     /// @param _ticketPrice Price of each ticket (without the decimals)

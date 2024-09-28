@@ -73,17 +73,27 @@ describe("Raffle", function () {
       expect(await raffle.token()).to.equal(await token.getAddress());
     });
 
-    it("Should set the correct ticket price", async () => {
+    it("Should set the correct small ticket bundle", async () => {
       const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
-      expect(await raffle.ticketPrice()).to.equal(ticketPrice);
+      const bundle = await raffle.smallBundle();
+      expect(bundle.amount).to.equal(45);
+      expect(bundle.price).to.equal(ticketPrice);
     });
 
-    it("Should set the correct ticket prices", async () => {
+    it("Should set the correct medium ticket bundle", async () => {
       const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
-      expect(await raffle.price10Tickets()).to.equal(
-        ticketPrice * PRICE_10_TICKET_MULTIPLIER,
-      );
-      expect(await raffle.price100Tickets()).to.equal(ticketPrice * 60n);
+      const bundle = await raffle.mediumBundle();
+
+      expect(bundle.price).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
+      expect(bundle.amount).to.equal(180);
+    });
+
+    it("Should set the correct large ticket bundle", async () => {
+      const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
+      const bundle = await raffle.bigBundle();
+
+      expect(bundle.price).to.equal(ticketPrice * 60n);
+      expect(bundle.amount).to.equal(450);
     });
 
     it("Should set the pot to 0", async () => {
@@ -209,11 +219,12 @@ describe("Raffle", function () {
             .connect(player)
             .approve(await raffle.getAddress(), ticketPrice * 2n * multiplier);
           // Buy 1 ticket and verify that the player has 1 ticket
-          await raffle.connect(player).buySingleTicket();
-          expect(await raffle.countUserTickets()).to.equal(1);
+          await raffle.connect(player).buySmallTicketBundle();
+          const smallBundle = await raffle.smallBundle();
+          expect(await raffle.countUserTickets()).to.equal(smallBundle.amount);
           // Buy more tickets and verify that the player now has amount + 1 tickets
           await purchase(raffle.connect(player));
-          expect(await raffle.countUserTickets()).to.equal(amount + 1);
+          expect(await raffle.countUserTickets()).to.equal(BigInt(amount) + smallBundle.amount);
         });
 
         it("Should fail if the raffle end date has been reached", async () => {
@@ -322,7 +333,7 @@ describe("Raffle", function () {
       await token
         .connect(player)
         .approve(rAddress, ticketPrice * PRICE_10_TICKET_MULTIPLIER);
-      await raffle.connect(player).buy10Tickets();
+      await raffle.connect(player).buyMediumTicketBundle();
       raffleInstance = raffle;
     });
 
@@ -379,7 +390,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_10_TICKET_MULTIPLIER,
         );
-      await raffle.connect(player).buy10Tickets();
+      await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
 
@@ -399,7 +410,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_10_TICKET_MULTIPLIER,
         );
-      await raffle.connect(player).buy10Tickets();
+      await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
 
@@ -420,7 +431,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_100_TICKET_MULTIPLIER,
         );
-      await raffle.connect(player).buy100Tickets();
+      await raffle.connect(player).buyBigTicketBundle();
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_100_TICKET_MULTIPLIER);
 
@@ -445,7 +456,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_10_TICKET_MULTIPLIER,
         );
-      await raffle.connect(player).buy10Tickets();
+      await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
 
       time.increaseTo(generateDateInTheFuture(10));
@@ -466,7 +477,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_10_TICKET_MULTIPLIER,
         );
-      await raffle.connect(player).buy10Tickets();
+      await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
 
       time.increaseTo(generateDateInTheFuture(10));

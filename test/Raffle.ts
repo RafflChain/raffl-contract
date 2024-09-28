@@ -137,22 +137,22 @@ describe("Raffle", function () {
       multiplier: bigint;
       purchase: (contract: Raffle) => Promise<ContractTransactionResponse>;
     }[] = [
-        {
-          amount: 45,
-          multiplier: 1n,
-          purchase: (raffle) => raffle.buySmallTicketBundle(),
-        },
-        {
-          amount: 180,
-          multiplier: PRICE_10_TICKET_MULTIPLIER,
-          purchase: (raffle) => raffle.buyMediumTicketBundle(),
-        },
-        {
-          amount: 450,
-          multiplier: PRICE_100_TICKET_MULTIPLIER,
-          purchase: (raffle) => raffle.buyBigTicketBundle(),
-        },
-      ];
+      {
+        amount: 45,
+        multiplier: 1n,
+        purchase: (raffle) => raffle.buySmallTicketBundle(),
+      },
+      {
+        amount: 180,
+        multiplier: PRICE_10_TICKET_MULTIPLIER,
+        purchase: (raffle) => raffle.buyMediumTicketBundle(),
+      },
+      {
+        amount: 450,
+        multiplier: PRICE_100_TICKET_MULTIPLIER,
+        purchase: (raffle) => raffle.buyBigTicketBundle(),
+      },
+    ];
 
     conditions.forEach(({ amount, multiplier, purchase }) => {
       describe(`${amount} ticket(s)`, () => {
@@ -224,7 +224,9 @@ describe("Raffle", function () {
           expect(await raffle.countUserTickets()).to.equal(smallBundle.amount);
           // Buy more tickets and verify that the player now has amount + 1 tickets
           await purchase(raffle.connect(player));
-          expect(await raffle.countUserTickets()).to.equal(BigInt(amount) + smallBundle.amount);
+          expect(await raffle.countUserTickets()).to.equal(
+            BigInt(amount) + smallBundle.amount,
+          );
         });
 
         it("Should fail if the raffle end date has been reached", async () => {

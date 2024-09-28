@@ -54,14 +54,16 @@ jobs:
       - name: Install variables
         run: |
           npx hardhat vars set ALCHEMY_API_KEY "$ALCHEMY_API_KEY"
-          npx hardhat vars set SEPOLIA_PRIVATE_KEY "$SEPOLIA_PRIVATE_KEY"
-          npx hardhat vars set MAINNET_PRIVATE_KEY "$MAINNET_PRIVATE_KEY"
           npx hardhat vars set ETHERSCAN_API_KEY "$ETHERSCAN_API_KEY"
         env:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
-          SEPOLIA_PRIVATE_KEY: ${{ secrets.SEPOLIA_PRIVATE_KEY }}
-          MAINNET_PRIVATE_KEY: ${{ secrets.MAINNET_PRIVATE_KEY }}
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+      - name: Set sepolia private key
+        if: ${{ inputs.network == 'sepolia' }}
+        run: npx hardhat vars set PRIVATE_KEY ${{ secrets.SEPOLIA_PRIVATE_KEY }}
+      - name: Set mainnet private key
+        if: ${{ inputs.network == 'mainnet' }}
+        run: npx hardhat vars set PRIVATE_KEY ${{ secrets.MAINNET_PRIVATE_KEY }}
 
       - name: Run deployment script
         run: npx hardhat ignition deploy ignition/modules/Raffle.ts --network ${{ inputs.network }} --verify
@@ -70,8 +72,15 @@ jobs:
           TOKEN: ${{ inputs.token }}
           DURATION: ${{ inputs.duration }}
           HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
-      - name: Get contract address
+      - name: Get sepolia contract address
+        if: ${{ inputs.network == 'sepolia' }}
         run: |
           ADDRESS=$(jq -r '."Deployment#Raffle"' ignition/deployments/chain-11155111/deployed_addresses.json)
           echo '# Raffle deployed! 🚀' >> $GITHUB_STEP_SUMMARY
           echo "Address: <a href=\"https://sepolia.etherscan.io/address/$ADDRESS\">$ADDRESS</a>" >> $GITHUB_STEP_SUMMARY
+      - name: Get mainnet contract address
+        if: ${{ inputs.network }} == 'mainnet'
+        run: |
+          ADDRESS=$(jq -r '."Deployment#Raffle"' ignition/deployments/chain-1/deployed_addresses.json)
+          echo '# Raffle deployed! 🚀' >> $GITHUB_STEP_SUMMARY
+          echo "Address: <a href=\"https://etherscan.io/address/$ADDRESS\">$ADDRESS</a>" >> $GITHUB_STEP_SUMMARY

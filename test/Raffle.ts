@@ -127,22 +127,22 @@ describe("Raffle", function () {
       multiplier: bigint;
       purchase: (contract: Raffle) => Promise<ContractTransactionResponse>;
     }[] = [
-      {
-        amount: 45,
-        multiplier: 1n,
-        purchase: (raffle) => raffle.buySingleTicket(),
-      },
-      {
-        amount: 180,
-        multiplier: PRICE_10_TICKET_MULTIPLIER,
-        purchase: (raffle) => raffle.buy10Tickets(),
-      },
-      {
-        amount: 450,
-        multiplier: PRICE_100_TICKET_MULTIPLIER,
-        purchase: (raffle) => raffle.buy100Tickets(),
-      },
-    ];
+        {
+          amount: 45,
+          multiplier: 1n,
+          purchase: (raffle) => raffle.buySmallTicketBundle(),
+        },
+        {
+          amount: 180,
+          multiplier: PRICE_10_TICKET_MULTIPLIER,
+          purchase: (raffle) => raffle.buyMediumTicketBundle(),
+        },
+        {
+          amount: 450,
+          multiplier: PRICE_100_TICKET_MULTIPLIER,
+          purchase: (raffle) => raffle.buyBigTicketBundle(),
+        },
+      ];
 
     conditions.forEach(({ amount, multiplier, purchase }) => {
       describe(`${amount} ticket(s)`, () => {

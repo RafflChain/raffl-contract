@@ -8,8 +8,8 @@ import hre from "hardhat";
 import { Raffle } from "../typechain-types";
 
 describe("Raffle", function () {
-  const PRICE_10_TICKET_MULTIPLIER = 8n;
-  const PRICE_100_TICKET_MULTIPLIER = 60n;
+  const PRICE_MEDIUM_BUNDLE_MULTIPLIER = 8n;
+  const PRICE_LARGE_BUNDLE_MULTIPLIER = 60n;
 
   async function deployRaffleFixture() {
     const ticketPrice = 2n;
@@ -84,7 +84,9 @@ describe("Raffle", function () {
       const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
       const bundle = await raffle.mediumBundle();
 
-      expect(bundle.price).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
+      expect(bundle.price).to.equal(
+        ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
+      );
       expect(bundle.amount).to.equal(10);
     });
 
@@ -103,10 +105,12 @@ describe("Raffle", function () {
       expect(small.amount).to.equal(1);
       expect(small.price).to.equal(ticketPrice);
 
-      expect(medium.price).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
+      expect(medium.price).to.equal(
+        ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
+      );
       expect(medium.amount).to.equal(10);
 
-      expect(large.price).to.equal(ticketPrice * 60n);
+      expect(large.price).to.equal(ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER);
       expect(large.amount).to.equal(100);
     });
 
@@ -147,23 +151,23 @@ describe("Raffle", function () {
     });
 
     const conditions: {
-      amount: number;
+      amount: bigint;
       multiplier: bigint;
       purchase: (contract: Raffle) => Promise<ContractTransactionResponse>;
     }[] = [
       {
-        amount: 1,
+        amount: 1n,
         multiplier: 1n,
         purchase: (raffle) => raffle.buySmallTicketBundle(),
       },
       {
-        amount: 10,
-        multiplier: PRICE_10_TICKET_MULTIPLIER,
+        amount: 10n,
+        multiplier: PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         purchase: (raffle) => raffle.buyMediumTicketBundle(),
       },
       {
-        amount: 100,
-        multiplier: PRICE_100_TICKET_MULTIPLIER,
+        amount: 100n,
+        multiplier: PRICE_LARGE_BUNDLE_MULTIPLIER,
         purchase: (raffle) => raffle.buyLargeTicketBundle(),
       },
     ];
@@ -306,7 +310,7 @@ describe("Raffle", function () {
             -ticketPrice * multiplier,
           );
           expect(await raffle.connect(owner).listSoldTickets()).to.equal(
-            amount * 2,
+            amount * 2n,
           );
         });
 
@@ -348,27 +352,28 @@ describe("Raffle", function () {
       const rAddress = await raffle.getAddress();
       await token
         .connect(player)
-        .approve(rAddress, ticketPrice * PRICE_10_TICKET_MULTIPLIER);
+        .approve(rAddress, ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
       await raffle.connect(player).buyMediumTicketBundle();
       raffleInstance = raffle;
     });
 
     it("Should show the correct pot size", async () => {
       expect(await raffleInstance.pot()).to.equal(
-        price * PRICE_10_TICKET_MULTIPLIER,
+        price * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
       );
     });
 
     it("Should show correct prize amount", async () => {
       expect(await raffleInstance.prizePool()).to.equal(
-        (price * PRICE_10_TICKET_MULTIPLIER) / 2n,
+        (price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n,
       );
     });
 
     it("Should show the correct donation amount", async () => {
-      const commision = ((price * PRICE_10_TICKET_MULTIPLIER) / 2n / 100n) * 5n;
+      const commision =
+        ((price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n / 100n) * 5n;
       expect(await raffleInstance.donationAmount()).to.equal(
-        (price * PRICE_10_TICKET_MULTIPLIER) / 2n - commision,
+        (price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n - commision,
       );
     });
   });
@@ -404,11 +409,11 @@ describe("Raffle", function () {
         .connect(player)
         .approve(
           await raffle.getAddress(),
-          ticketPrice * PRICE_10_TICKET_MULTIPLIER,
+          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         );
       await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
-      expect(pot).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
+      expect(pot).to.equal(ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
 
       time.increaseTo(generateDateInTheFuture(10));
       await expect(
@@ -424,11 +429,11 @@ describe("Raffle", function () {
         .connect(player)
         .approve(
           await raffle.getAddress(),
-          ticketPrice * PRICE_10_TICKET_MULTIPLIER,
+          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         );
       await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
-      expect(pot).to.equal(ticketPrice * PRICE_10_TICKET_MULTIPLIER);
+      expect(pot).to.equal(ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
 
       time.increaseTo(generateDateInTheFuture(10));
       const comission = (pot / 2n / 100n) * 5n;
@@ -445,11 +450,11 @@ describe("Raffle", function () {
         .connect(player)
         .approve(
           await raffle.getAddress(),
-          ticketPrice * PRICE_100_TICKET_MULTIPLIER,
+          ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
         );
       await raffle.connect(player).buyLargeTicketBundle();
       const pot = await raffle.pot();
-      expect(pot).to.equal(ticketPrice * PRICE_100_TICKET_MULTIPLIER);
+      expect(pot).to.equal(ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER);
 
       time.increaseTo(generateDateInTheFuture(10));
       const comission = (pot / 2n / 100n) * 5n;
@@ -470,7 +475,7 @@ describe("Raffle", function () {
         .connect(player)
         .approve(
           await raffle.getAddress(),
-          ticketPrice * PRICE_10_TICKET_MULTIPLIER,
+          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         );
       await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
@@ -491,7 +496,7 @@ describe("Raffle", function () {
         .connect(player)
         .approve(
           await raffle.getAddress(),
-          ticketPrice * PRICE_10_TICKET_MULTIPLIER,
+          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         );
       await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();

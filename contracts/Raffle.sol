@@ -17,20 +17,27 @@ contract Raffle {
     uint public immutable raffleEndDate;
     /// Total amount of the tokens in the contract
     uint public pot;
-    /// Price of an individual ticket
-    uint public immutable ticketPrice;
-    /// Price of 10 tickets
-    /// @notice the price is lower than actually buying 10 tickets individually to attract more purchases
-    uint public immutable price10Tickets;
-    /// Price of 100 tickets
-    /// @notice the price is lower than actually buying 100 tickets individually to attract more purchases
-    uint public immutable price100Tickets;
     /// Token used in the contract as the currency
     IERC20Metadata public immutable token;
 
     /// Address of the winner
     /// @dev this value is set up only after the raffle end
     address public winner;
+
+    /// Container of ticket information.
+    struct Bundle {
+        uint amount;
+        uint price;
+    }
+
+    /// Price and amount of the small bundle
+    Bundle public smallBundle;
+    /// Price and amount of the medium bundle
+    /// @notice the final price should be discounted than buying the same amount of small bundles
+    Bundle public mediumBundle;
+    /// Price and amount of the big bundle
+    /// @notice the final price should be discounted than buying the same amount of small bundles
+    Bundle public largeBundle;
 
     /// @param _ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
@@ -40,43 +47,52 @@ contract Raffle {
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
         token = _token;
-        ticketPrice = _ticketPrice * (10 ** token.decimals());
-        price10Tickets = ticketPrice * 8;
-        price100Tickets = ticketPrice * 60;
+        uint ticketPrice = _ticketPrice * (10 ** token.decimals());
+
+        smallBundle = Bundle(1, ticketPrice);
+        mediumBundle = Bundle(10, ticketPrice * 8);
+        largeBundle = Bundle(100, ticketPrice * 60);
     }
 
     /// Utility method used to buy any given amount of tickets
-    /// @param amountOfTickets current amount of tickets (must be bigger than 0)
-    /// @param totalPrice Price of the collection of tickets (must be at least the price of one ticket)
-    function buyCollectionOfTickets(uint amountOfTickets, uint totalPrice) private returns (uint) {
+    /// @param bundle the bundle that will be purchased
+    function buyCollectionOfTickets(Bundle memory bundle) private returns (uint) {
         require(block.timestamp < raffleEndDate, "Raffle is over");
-        require(amountOfTickets > 0, "Can not buy 0 tickets");
-        require(totalPrice >= ticketPrice, "Price is too low");
+        require(bundle.amount > 0, "Can not buy 0 tickets");
         require(msg.sender != owner, "Owner cannot participate in the Raffle");
-        require(token.balanceOf(msg.sender) >= totalPrice, "Insufficient funds");
-        require(token.allowance(msg.sender, address(this)) >= totalPrice, "Insufficient Allowance");
+        require(token.balanceOf(msg.sender) >= bundle.price, "Insufficient funds");
+        require(token.allowance(msg.sender, address(this)) >= bundle.price, "Insufficient Allowance");
 
-        token.transferFrom(msg.sender, address(this), totalPrice);
-        pot += totalPrice;
-        for (uint256 i = 0; i < amountOfTickets; i++) {
+        token.transferFrom(msg.sender, address(this), bundle.price);
+        pot += bundle.price;
+        for (uint256 i = 0; i < bundle.amount; i++) {
             players.push(msg.sender);
         }
-        return amountOfTickets;
+        return bundle.amount;
     }
 
     /// Buy an individual ticket
-    function buySingleTicket() public returns (uint) {
-        return buyCollectionOfTickets(1, ticketPrice);
+    function buySmallTicketBundle() public returns (uint) {
+        return buyCollectionOfTickets(smallBundle);
     }
 
     /// Buy a collection of 10 tickets
-    function buy10Tickets() public returns (uint) {
-        return buyCollectionOfTickets(10, price10Tickets);
+    function buyMediumTicketBundle() public returns (uint) {
+        return buyCollectionOfTickets(mediumBundle);
     }
 
     /// Buy a collection of 100 tickets
-    function buy100Tickets() public returns (uint) {
-        return buyCollectionOfTickets(100, price100Tickets);
+    function buyLargeTicketBundle() public returns (uint) {
+        return buyCollectionOfTickets(largeBundle);
+    }
+
+    /// Returns all the available bundles sorted from smaller to bigger
+    function getBundles() public view returns (Bundle[] memory) {
+        Bundle[] memory bundles = new Bundle[](3);
+        bundles[0] = smallBundle;
+        bundles[1] = mediumBundle;
+        bundles[2] = largeBundle;
+        return bundles;
     }
 
     /// User obtains a free ticket

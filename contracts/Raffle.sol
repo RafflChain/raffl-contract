@@ -109,7 +109,9 @@ contract Raffle {
     function countUserTickets() public view returns (uint) {
         uint tickets = 0;
         for (uint256 i = 0; i < players.length; i++) {
-            tickets++;
+            if (players[i] == msg.sender) {
+                tickets++;
+            }
         }
         return tickets;
     }

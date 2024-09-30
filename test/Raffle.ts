@@ -186,7 +186,9 @@ describe("Raffle", function () {
             player.address,
             -ticketPrice * multiplier,
           );
-          expect(await raffle.countUserTickets()).to.equal(amount);
+          expect(await raffle.connect(player).countUserTickets()).to.equal(
+            amount,
+          );
         });
 
         it(`Should change player's balance when buying ${amount} ticket(s)`, async () => {
@@ -201,7 +203,9 @@ describe("Raffle", function () {
             [player, raffle],
             [-ticketPrice * multiplier, ticketPrice * multiplier],
           );
-          expect(await raffle.countUserTickets()).to.equal(amount);
+          expect(await raffle.connect(player).countUserTickets()).to.equal(
+            amount,
+          );
         });
 
         it("Should fail if it does not have allowance", async () => {
@@ -232,19 +236,45 @@ describe("Raffle", function () {
           const { raffle, token, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
           const [player] = players;
+          const playerRaffle = raffle.connect(player);
           // Aprove 2 tickets
           await token
             .connect(player)
             .approve(await raffle.getAddress(), ticketPrice * 2n * multiplier);
           // Buy 1 ticket and verify that the player has 1 ticket
-          await raffle.connect(player).buySmallTicketBundle();
+          await playerRaffle.buySmallTicketBundle();
           const smallBundle = await raffle.smallBundle();
-          expect(await raffle.countUserTickets()).to.equal(smallBundle.amount);
+          expect(await playerRaffle.countUserTickets()).to.equal(
+            smallBundle.amount,
+          );
           // Buy more tickets and verify that the player now has amount + 1 tickets
-          await purchase(raffle.connect(player));
-          expect(await raffle.countUserTickets()).to.equal(
+          await purchase(playerRaffle);
+          expect(await playerRaffle.countUserTickets()).to.equal(
             BigInt(amount) + smallBundle.amount,
           );
+        });
+
+        it("Should reflect the amount of tickets each user has", async () => {
+          const { raffle, token, players, ticketPrice } =
+            await loadFixture(deployRaffleFixture);
+          const [player1, player2] = players;
+          // Aprove 2 tickets
+          await token
+            .connect(player1)
+            .approve(await raffle.getAddress(), ticketPrice * multiplier);
+          await purchase(raffle.connect(player1));
+          expect(await raffle.connect(player1).countUserTickets()).to.equal(
+            amount,
+          );
+
+          // Aprove 1 tickets
+          await token
+            .connect(player2)
+            .approve(await raffle.getAddress(), ticketPrice * 3n);
+          await raffle.connect(player2).buySmallTicketBundle();
+          await raffle.connect(player2).buySmallTicketBundle();
+          await raffle.connect(player2).buySmallTicketBundle();
+          expect(await raffle.connect(player2).countUserTickets()).to.equal(3);
         });
 
         it("Should fail if the raffle end date has been reached", async () => {
@@ -331,9 +361,9 @@ describe("Raffle", function () {
             .approve(await raffle.getAddress(), ticketPrice * multiplier);
           await purchase(raffle.connect(player));
 
-          await expect(raffle.getFreeTicket()).to.be.rejectedWith(
-            "User already owns tickets",
-          );
+          await expect(
+            raffle.connect(player).getFreeTicket(),
+          ).to.be.rejectedWith("User already owns tickets");
         });
       });
     });

@@ -34,7 +34,15 @@ if (vars.has("MAINNET_PRIVATE_KEY")) {
 }
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.24",
+  solidity: {
+    version: "0.8.24",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 1000,
+      },
+    },
+  },
   etherscan: vars.has("ETHERSCAN_API_KEY")
     ? {
         apiKey: vars.get("ETHERSCAN_API_KEY"),

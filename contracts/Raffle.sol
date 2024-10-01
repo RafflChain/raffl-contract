@@ -107,13 +107,13 @@ contract Raffle {
     /// User obtains a free ticket
     /// @notice only the fist ticket is free
     function getFreeTicket() public returns (uint) {
-        require(tickets[msg.sender] == 0, "User already owns tickets");
+        require(!isPlayer[msg.sender], "User already owns tickets");
         require(msg.sender != owner, "Owner can not participate in the Raffle");
 
-        if (!isPlayer[msg.sender]) {
-            isPlayer[msg.sender] = true;
-            players.push(msg.sender);
-        }
+        isPlayer[msg.sender] = true;
+        players.push(msg.sender);
+        tickets[msg.sender] = 1;
+
         return 1;
     }
 

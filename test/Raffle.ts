@@ -138,7 +138,7 @@ describe("Raffle", function () {
         const { raffle, players } = await loadFixture(deployRaffleFixture);
         const [player] = players;
         await raffle.connect(player).getFreeTicket();
-        expect(await raffle.connect(player).countUserTickets()).to.equal(1);
+        expect(await raffle.connect(player).tickets(player)).to.equal(1);
       });
 
       it("Should increase the ticket count", async () => {
@@ -186,9 +186,7 @@ describe("Raffle", function () {
             player.address,
             -ticketPrice * multiplier,
           );
-          expect(await raffle.connect(player).countUserTickets()).to.equal(
-            amount,
-          );
+          expect(await raffle.connect(player).tickets(player)).to.equal(amount);
         });
 
         it(`Should change player's balance when buying ${amount} ticket(s)`, async () => {
@@ -203,9 +201,7 @@ describe("Raffle", function () {
             [player, raffle],
             [-ticketPrice * multiplier, ticketPrice * multiplier],
           );
-          expect(await raffle.connect(player).countUserTickets()).to.equal(
-            amount,
-          );
+          expect(await raffle.connect(player).tickets(player)).to.equal(amount);
         });
 
         it("Should fail if it does not have allowance", async () => {
@@ -244,12 +240,12 @@ describe("Raffle", function () {
           // Buy 1 ticket and verify that the player has 1 ticket
           await playerRaffle.buySmallTicketBundle();
           const smallBundle = await raffle.smallBundle();
-          expect(await playerRaffle.countUserTickets()).to.equal(
+          expect(await playerRaffle.tickets(player)).to.equal(
             smallBundle.amount,
           );
           // Buy more tickets and verify that the player now has amount + 1 tickets
           await purchase(playerRaffle);
-          expect(await playerRaffle.countUserTickets()).to.equal(
+          expect(await playerRaffle.tickets(player)).to.equal(
             BigInt(amount) + smallBundle.amount,
           );
         });
@@ -263,18 +259,19 @@ describe("Raffle", function () {
             .connect(player1)
             .approve(await raffle.getAddress(), ticketPrice * multiplier);
           await purchase(raffle.connect(player1));
-          expect(await raffle.connect(player1).countUserTickets()).to.equal(
+          expect(await raffle.connect(player1).tickets(player1)).to.equal(
             amount,
           );
 
           // Aprove 1 tickets
+          const rafflePlayer2 = raffle.connect(player2);
           await token
             .connect(player2)
             .approve(await raffle.getAddress(), ticketPrice * 3n);
-          await raffle.connect(player2).buySmallTicketBundle();
-          await raffle.connect(player2).buySmallTicketBundle();
-          await raffle.connect(player2).buySmallTicketBundle();
-          expect(await raffle.connect(player2).countUserTickets()).to.equal(3);
+          await rafflePlayer2.buySmallTicketBundle();
+          await rafflePlayer2.buySmallTicketBundle();
+          await rafflePlayer2.buySmallTicketBundle();
+          expect(await rafflePlayer2.tickets(player2)).to.equal(3);
         });
 
         it("Should fail if the raffle end date has been reached", async () => {
@@ -540,6 +537,90 @@ describe("Raffle", function () {
 
       await expect(raffle.connect(owner).finishRaffle(random)).to.rejectedWith(
         "A winner has already been selected",
+      );
+    });
+
+    it("Should pick a winner based on weighted randomness", async function () {
+      // Map to hold counts of wins
+      let winnerCounts: { [playerNumber: number]: number } = {
+        1: 0,
+        2: 0,
+        3: 0,
+      };
+
+      // Run pickWinner multiple times to check weighted randomness
+      for (let i = 0; i < 500; i++) {
+        const { raffle, owner, token, players, ticketPrice } =
+          await loadFixture(deployRaffleFixture);
+        const [player1, player2, player3] = players;
+        // Players buy tickets
+
+        const ticketCost = ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER;
+
+        // Player 1
+        await token
+          .connect(player1)
+          .approve(await raffle.getAddress(), ticketCost);
+        await raffle.connect(player1).buyMediumTicketBundle(); // 1 ticket
+
+        // Player 2
+        await token
+          .connect(player2)
+          .approve(await raffle.getAddress(), ticketCost * 3n);
+        await raffle.connect(player2).buyMediumTicketBundle(); // 1 ticket
+        await raffle.connect(player2).buyMediumTicketBundle(); // Total 2 tickets
+        await raffle.connect(player2).buyMediumTicketBundle(); // Total 3 tickets
+
+        // Player 3
+        await token
+          .connect(player3)
+          .approve(await raffle.getAddress(), ticketCost);
+        await raffle.connect(player3).buyMediumTicketBundle(); // 1 ticket
+
+        // Simulate new block for randomness
+        await hre.network.provider.send("evm_increaseTime", [
+          Math.floor(Math.random() * 100),
+        ]);
+        await hre.network.provider.send("evm_mine");
+
+        time.increaseTo(
+          generateDateInTheFuture(Math.floor(Math.random() * 100) + 3),
+        );
+
+        let winnerTx = await raffle.connect(owner).finishRaffle(owner);
+
+        await winnerTx.wait();
+
+        const winner = await raffle.winner();
+
+        const winnerToPlayerNumber = (address: string): number => {
+          switch (winner) {
+            case player1.address:
+              return 1;
+            case player2.address:
+              return 2;
+            case player3.address:
+              return 3;
+            default:
+              throw new Error("Out of bounds!");
+          }
+        };
+
+        const winnerNumber = winnerToPlayerNumber(winner);
+
+        winnerCounts[winnerNumber] += 1;
+      }
+
+      const results = JSON.stringify(winnerCounts);
+
+      // player2 should win approximately twice as often as player1 and player3
+      expect(winnerCounts[2]).to.be.greaterThan(
+        winnerCounts[1],
+        `Results: ${results}`,
+      );
+      expect(winnerCounts[2]).to.be.greaterThan(
+        winnerCounts[3],
+        `Results: ${results}`,
       );
     });
   });

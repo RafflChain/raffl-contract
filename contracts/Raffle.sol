@@ -8,8 +8,14 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 /// @notice Only the deployer of the contract can finish the raffle
 /// @custom:security-contact info+security@rafflchain.com
 contract Raffle {
-    /// Array with all the players participating. Each element represents a ticket
-    address[] public players;
+    /// Array with all the players participating. Each user has tickets
+    address[] private players;
+    /// Tickets each player owns
+    mapping(address => uint) public tickets;
+
+    /// Mapping used to ensure that we don't have duplicate players
+    mapping(address => bool) private isPlayer;
+
     /// Address of the deployer of the contract.
     /// @notice This is the user that can finalize the raffle and receives the commision
     address private immutable owner;
@@ -65,9 +71,12 @@ contract Raffle {
 
         token.transferFrom(msg.sender, address(this), bundle.price);
         pot += bundle.price;
-        for (uint256 i = 0; i < bundle.amount; i++) {
+        uint playerTickets = tickets[msg.sender];
+        if (!isPlayer[msg.sender]) {
+            isPlayer[msg.sender] = true;
             players.push(msg.sender);
         }
+        tickets[msg.sender] = playerTickets + bundle.amount;
         return bundle.amount;
     }
 
@@ -98,22 +107,14 @@ contract Raffle {
     /// User obtains a free ticket
     /// @notice only the fist ticket is free
     function getFreeTicket() public returns (uint) {
-        require(countUserTickets() == 0, "User already owns tickets");
+        require(!isPlayer[msg.sender], "User already owns tickets");
         require(msg.sender != owner, "Owner can not participate in the Raffle");
-        players.push(msg.sender);
-        return 1;
-    }
 
-    /// Check how many tickets the current user has
-    /// @return amount of tickets the user owns
-    function countUserTickets() public view returns (uint) {
-        uint tickets = 0;
-        for (uint256 i = 0; i < players.length; i++) {
-            if (players[i] == msg.sender) {
-                tickets++;
-            }
-        }
-        return tickets;
+        isPlayer[msg.sender] = true;
+        players.push(msg.sender);
+        tickets[msg.sender] = 1;
+
+        return 1;
     }
 
     /// Function to calculate the timestamp X days from now
@@ -124,24 +125,37 @@ contract Raffle {
         return futureTimestamp;
     }
 
-    /// List all the tickets in the system
+    /// Calculate the total number of tickets
     /// @notice Can only be invoked by the contract owner
     function listSoldTickets() public view returns (uint256) {
         require(msg.sender == owner, "Invoker must be the owner");
-        return players.length;
+        uint ticketsSold = 0;
+        for (uint256 i = 0; i < players.length; i++) {
+            ticketsSold += tickets[players[i]];
+        }
+        return ticketsSold;
     }
 
-    /// Value used to generate randomness
-    uint private counter = 1;
+    /// Picks a random winner using a weighted algorithm
+    /// @notice the algorithm randomness can be predicted if triggered automatically, better to do it manually
+    function pickRandomWinner() private view returns (address) {
+        uint totalTickets = listSoldTickets();
+        require(totalTickets > 0, "No tickets sold");
 
-    function random() private returns (uint) {
-        counter++;
-        return uint(keccak256(abi.encodePacked(block.prevrandao, block.timestamp, players, counter)));
-    }
+        // Generate a pseudo-random number based on block variables
+        uint randomNumber = uint(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, block.number))) %
+            totalTickets;
 
-    function pickRandomWinner() private returns (address) {
-        uint index = random() % players.length;
-        return players[index];
+        uint cumulativeSum = 0;
+        // Iterate over players to find the winner
+        for (uint i = 0; i < players.length; i++) {
+            cumulativeSum += tickets[players[i]];
+            if (randomNumber < cumulativeSum) {
+                return players[i];
+            }
+        }
+        // This case should never occur if the function is implemented correctly
+        revert("No winner found - this should never happen");
     }
 
     /// See what would be the prize pool with the current treasury

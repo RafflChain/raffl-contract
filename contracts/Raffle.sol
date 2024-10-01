@@ -8,8 +8,11 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 /// @notice Only the deployer of the contract can finish the raffle
 /// @custom:security-contact info+security@rafflchain.com
 contract Raffle {
-    /// Array with all the players participating. Each element represents a ticket
-    address[] public players;
+    /// Array with all the players participating. Each user has tickets
+    address[] private players;
+    /// Tickets each player owns
+    mapping(address => uint) private tickets;
+
     /// Address of the deployer of the contract.
     /// @notice This is the user that can finalize the raffle and receives the commision
     address private immutable owner;
@@ -65,9 +68,11 @@ contract Raffle {
 
         token.transferFrom(msg.sender, address(this), bundle.price);
         pot += bundle.price;
-        for (uint256 i = 0; i < bundle.amount; i++) {
+        uint playerTickets = tickets[msg.sender];
+        if (playerTickets == 0) {
             players.push(msg.sender);
         }
+        tickets[msg.sender] = playerTickets + bundle.amount;
         return bundle.amount;
     }
 
@@ -98,22 +103,11 @@ contract Raffle {
     /// User obtains a free ticket
     /// @notice only the fist ticket is free
     function getFreeTicket() public returns (uint) {
-        require(countUserTickets() == 0, "User already owns tickets");
+        require(tickets[msg.sender] == 0, "User already owns tickets");
         require(msg.sender != owner, "Owner can not participate in the Raffle");
         players.push(msg.sender);
+        tickets[msg.sender] = 1;
         return 1;
-    }
-
-    /// Check how many tickets the current user has
-    /// @return amount of tickets the user owns
-    function countUserTickets() public view returns (uint) {
-        uint tickets = 0;
-        for (uint256 i = 0; i < players.length; i++) {
-            if (players[i] == msg.sender) {
-                tickets++;
-            }
-        }
-        return tickets;
     }
 
     /// Function to calculate the timestamp X days from now

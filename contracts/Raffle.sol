@@ -118,7 +118,7 @@ contract Raffle {
         return futureTimestamp;
     }
 
-    /// List all the tickets in the system
+    /// Calculate the total number of tickets
     /// @notice Can only be invoked by the contract owner
     function listSoldTickets() public view returns (uint256) {
         require(msg.sender == owner, "Invoker must be the owner");
@@ -129,17 +129,26 @@ contract Raffle {
         return ticketsSold;
     }
 
-    /// Value used to generate randomness
-    uint private counter = 1;
+    /// Picks a random winner using a weighted algorithm
+    /// @notice the algorithm randomness can be predicted if triggered automatically, better to do it manually
+    function pickRandomWinner() private view returns (address) {
+        uint totalTickets = listSoldTickets();
+        require(totalTickets > 0, "No tickets sold");
 
-    function random() private returns (uint) {
-        counter++;
-        return uint(keccak256(abi.encodePacked(block.prevrandao, block.timestamp, players, counter)));
-    }
+        // Generate a pseudo-random number based on block variables
+        uint randomNumber = uint(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, block.number))) %
+            totalTickets;
 
-    function pickRandomWinner() private returns (address) {
-        uint index = random() % players.length;
-        return players[index];
+        uint cumulativeSum = 0;
+        // Iterate over players to find the winner
+        for (uint i = 0; i < players.length; i++) {
+            cumulativeSum += tickets[players[i]];
+            if (randomNumber < cumulativeSum) {
+                return players[i];
+            }
+        }
+        // In case no winner is found (should not happen), return a default value
+        return address(0);
     }
 
     /// See what would be the prize pool with the current treasury

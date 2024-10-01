@@ -537,16 +537,10 @@ describe("Raffle", function () {
 
       time.increaseTo(generateDateInTheFuture(5));
       const winnerTx = await raffle.connect(owner).finishRaffle(random);
-      const winnerReceipt = await winnerTx.wait();
 
-      const winnerEvent = winnerReceipt?.logs
-        .map((log) => {
-          return raffle.interface.parseLog(log);
-        })
-        .find((event) => event && event.name === "WinnerPicked");
-
-      const winner = winnerEvent?.args.winner;
-      expect(winner).to.be.equal(await raffle.winner());
+      await expect(winnerTx)
+        .to.emit(raffle, "WinnerPicked")
+        .withArgs(await raffle.winner());
     });
 
     it("Should not be able to be invoked once a winner was decided", async () => {

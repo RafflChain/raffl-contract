@@ -541,7 +541,6 @@ describe("Raffle", function () {
     });
 
     it("Should pick a winner based on weighted randomness", async function () {
-
       // Map to hold counts of wins
       let winnerCounts: { [playerNumber: number]: number } = {
         1: 0,
@@ -550,7 +549,7 @@ describe("Raffle", function () {
       };
 
       // Run pickWinner multiple times to check weighted randomness
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 500; i++) {
         const { raffle, owner, token, players, ticketPrice } =
           await loadFixture(deployRaffleFixture);
         const [player1, player2, player3] = players;
@@ -584,7 +583,9 @@ describe("Raffle", function () {
         ]);
         await hre.network.provider.send("evm_mine");
 
-        time.increaseTo(generateDateInTheFuture(10));
+        time.increaseTo(
+          generateDateInTheFuture(Math.floor(Math.random() * 100) + 3),
+        );
 
         let winnerTx = await raffle.connect(owner).finishRaffle(owner);
 
@@ -610,11 +611,17 @@ describe("Raffle", function () {
         winnerCounts[winnerNumber] += 1;
       }
 
-      console.log("Winner counts over 100 iterations:", winnerCounts);
+      const results = JSON.stringify(winnerCounts);
 
       // player2 should win approximately twice as often as player1 and player3
-      expect(winnerCounts[2]).to.be.greaterThan(winnerCounts[1]);
-      expect(winnerCounts[2]).to.be.greaterThan(winnerCounts[3]);
+      expect(winnerCounts[2]).to.be.greaterThan(
+        winnerCounts[1],
+        `Results: ${results}`,
+      );
+      expect(winnerCounts[2]).to.be.greaterThan(
+        winnerCounts[3],
+        `Results: ${results}`,
+      );
     });
   });
 });

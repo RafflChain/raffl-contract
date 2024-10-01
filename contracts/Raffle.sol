@@ -122,7 +122,11 @@ contract Raffle {
     /// @notice Can only be invoked by the contract owner
     function listSoldTickets() public view returns (uint256) {
         require(msg.sender == owner, "Invoker must be the owner");
-        return players.length;
+        uint ticketsSold = 0;
+        for (uint256 i = 0; i < players.length; i++) {
+            ticketsSold += tickets[players[i]];
+        }
+        return ticketsSold;
     }
 
     /// Value used to generate randomness

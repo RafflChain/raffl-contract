@@ -523,6 +523,26 @@ describe("Raffle", function () {
       expect(await raffle.winner()).to.equal(player.address);
     });
 
+    it("Should set winner's parameter and event to the same", async () => {
+      const { raffle, owner, token, players, ticketPrice } =
+        await loadFixture(deployRaffleFixture);
+      const [player, random] = players;
+      await token
+        .connect(player)
+        .approve(
+          await raffle.getAddress(),
+          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
+        );
+      await raffle.connect(player).buyMediumTicketBundle();
+
+      time.increaseTo(generateDateInTheFuture(5));
+      const winnerTx = await raffle.connect(owner).finishRaffle(random);
+
+      await expect(winnerTx)
+        .to.emit(raffle, "WinnerPicked")
+        .withArgs(await raffle.winner());
+    });
+
     it("Should not be able to be invoked once a winner was decided", async () => {
       const { raffle, owner, token, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
@@ -597,9 +617,15 @@ describe("Raffle", function () {
 
         let winnerTx = await raffle.connect(owner).finishRaffle(owner);
 
-        await winnerTx.wait();
+        const winnerReceipt = await winnerTx.wait();
 
-        const winner = await raffle.winner();
+        const winnerEvent = winnerReceipt?.logs
+          .map((log) => {
+            return raffle.interface.parseLog(log);
+          })
+          .find((event) => event && event.name === "WinnerPicked");
+
+        const winner = winnerEvent?.args.winner;
 
         const winnerToPlayerNumber = (address: string): number => {
           switch (winner) {

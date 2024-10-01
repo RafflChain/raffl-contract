@@ -8,8 +8,12 @@ import hre from "hardhat";
 import { Raffle } from "../typechain-types";
 
 describe("Raffle", function () {
-  const PRICE_MEDIUM_BUNDLE_MULTIPLIER = 8n;
-  const PRICE_LARGE_BUNDLE_MULTIPLIER = 60n;
+  const PRICE_MEDIUM_BUNDLE_MULTIPLIER = 3n;
+  const PRICE_LARGE_BUNDLE_MULTIPLIER = 5n;
+
+  const SMALL_BUNDLE_AMOUNT = 45n;
+  const MEDIUM_BUNDLE_AMOUNT = 200n;
+  const LARGE_BUNDLE_AMOUNT = 660n;
 
   async function deployRaffleFixture() {
     const ticketPrice = 2n;
@@ -76,7 +80,7 @@ describe("Raffle", function () {
     it("Should set the correct small ticket bundle", async () => {
       const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
       const bundle = await raffle.smallBundle();
-      expect(bundle.amount).to.equal(1);
+      expect(bundle.amount).to.equal(SMALL_BUNDLE_AMOUNT);
       expect(bundle.price).to.equal(ticketPrice);
     });
 
@@ -87,31 +91,33 @@ describe("Raffle", function () {
       expect(bundle.price).to.equal(
         ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
       );
-      expect(bundle.amount).to.equal(10);
+      expect(bundle.amount).to.equal(MEDIUM_BUNDLE_AMOUNT);
     });
 
     it("Should set the correct large ticket bundle", async () => {
       const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
       const bundle = await raffle.largeBundle();
 
-      expect(bundle.price).to.equal(ticketPrice * 60n);
-      expect(bundle.amount).to.equal(100);
+      expect(bundle.price).to.equal(
+        ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
+      );
+      expect(bundle.amount).to.equal(LARGE_BUNDLE_AMOUNT);
     });
 
     it("Should set all the bundles correctly", async () => {
       const { raffle, ticketPrice } = await loadFixture(deployRaffleFixture);
       const [small, medium, large] = await raffle.getBundles();
 
-      expect(small.amount).to.equal(1);
+      expect(small.amount).to.equal(SMALL_BUNDLE_AMOUNT);
       expect(small.price).to.equal(ticketPrice);
 
       expect(medium.price).to.equal(
         ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
       );
-      expect(medium.amount).to.equal(10);
+      expect(medium.amount).to.equal(MEDIUM_BUNDLE_AMOUNT);
 
       expect(large.price).to.equal(ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER);
-      expect(large.amount).to.equal(100);
+      expect(large.amount).to.equal(LARGE_BUNDLE_AMOUNT);
     });
 
     it("Should set the pot to 0", async () => {
@@ -156,17 +162,17 @@ describe("Raffle", function () {
       purchase: (contract: Raffle) => Promise<ContractTransactionResponse>;
     }[] = [
       {
-        amount: 1n,
+        amount: SMALL_BUNDLE_AMOUNT,
         multiplier: 1n,
         purchase: (raffle) => raffle.buySmallTicketBundle(),
       },
       {
-        amount: 10n,
+        amount: MEDIUM_BUNDLE_AMOUNT,
         multiplier: PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         purchase: (raffle) => raffle.buyMediumTicketBundle(),
       },
       {
-        amount: 100n,
+        amount: LARGE_BUNDLE_AMOUNT,
         multiplier: PRICE_LARGE_BUNDLE_MULTIPLIER,
         purchase: (raffle) => raffle.buyLargeTicketBundle(),
       },
@@ -271,7 +277,9 @@ describe("Raffle", function () {
           await rafflePlayer2.buySmallTicketBundle();
           await rafflePlayer2.buySmallTicketBundle();
           await rafflePlayer2.buySmallTicketBundle();
-          expect(await rafflePlayer2.tickets(player2)).to.equal(3);
+          expect(await rafflePlayer2.tickets(player2)).to.equal(
+            SMALL_BUNDLE_AMOUNT * 3n,
+          );
         });
 
         it("Should fail if the raffle end date has been reached", async () => {

@@ -55,9 +55,9 @@ contract Raffle {
         token = _token;
         uint ticketPrice = _ticketPrice * (10 ** token.decimals());
 
-        smallBundle = Bundle(1, ticketPrice);
-        mediumBundle = Bundle(10, ticketPrice * 8);
-        largeBundle = Bundle(100, ticketPrice * 60);
+        smallBundle = Bundle(45, ticketPrice);
+        mediumBundle = Bundle(200, ticketPrice * 3);
+        largeBundle = Bundle(660, ticketPrice * 5);
     }
 
     /// Utility method used to buy any given amount of tickets

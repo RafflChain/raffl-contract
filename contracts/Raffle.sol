@@ -13,6 +13,9 @@ contract Raffle {
     /// Tickets each player owns
     mapping(address => uint) public tickets;
 
+    /// Mapping used to ensure that we don't have duplicate players
+    mapping(address => bool) private isPlayer;
+
     /// Address of the deployer of the contract.
     /// @notice This is the user that can finalize the raffle and receives the commision
     address private immutable owner;
@@ -69,7 +72,8 @@ contract Raffle {
         token.transferFrom(msg.sender, address(this), bundle.price);
         pot += bundle.price;
         uint playerTickets = tickets[msg.sender];
-        if (playerTickets == 0) {
+        if (!isPlayer[msg.sender]) {
+            isPlayer[msg.sender] = true;
             players.push(msg.sender);
         }
         tickets[msg.sender] = playerTickets + bundle.amount;
@@ -105,8 +109,11 @@ contract Raffle {
     function getFreeTicket() public returns (uint) {
         require(tickets[msg.sender] == 0, "User already owns tickets");
         require(msg.sender != owner, "Owner can not participate in the Raffle");
-        players.push(msg.sender);
-        tickets[msg.sender] = 1;
+
+        if (!isPlayer[msg.sender]) {
+            isPlayer[msg.sender] = true;
+            players.push(msg.sender);
+        }
         return 1;
     }
 

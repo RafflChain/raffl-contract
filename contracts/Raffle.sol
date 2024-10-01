@@ -16,6 +16,9 @@ contract Raffle {
     /// Mapping used to ensure that we don't have duplicate players
     mapping(address => bool) private isPlayer;
 
+    /// Emitted when the raffle is over
+    event WinnerPicked(address winner);
+
     /// Address of the deployer of the contract.
     /// @notice This is the user that can finalize the raffle and receives the commision
     address private immutable owner;
@@ -180,6 +183,9 @@ contract Raffle {
         require(winner == address(0), "A winner has already been selected");
 
         winner = pickRandomWinner();
+
+        emit WinnerPicked(winner);
+
         // Divide into parts
         uint halfOfPot = prizePool();
         uint donation = donationAmount();

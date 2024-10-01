@@ -11,7 +11,7 @@ contract Raffle {
     /// Array with all the players participating. Each user has tickets
     address[] private players;
     /// Tickets each player owns
-    mapping(address => uint) private tickets;
+    mapping(address => uint) public tickets;
 
     /// Address of the deployer of the contract.
     /// @notice This is the user that can finalize the raffle and receives the commision

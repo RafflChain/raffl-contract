@@ -536,15 +536,14 @@ describe("Raffle", function () {
       await raffle.connect(player).buyMediumTicketBundle();
 
       time.increaseTo(generateDateInTheFuture(5));
-      const winnerTx =
-        await raffle.connect(owner).finishRaffle(random)
-        ;
-
+      const winnerTx = await raffle.connect(owner).finishRaffle(random);
       const winnerReceipt = await winnerTx.wait();
 
-      const winnerEvent = winnerReceipt?.logs.map(log => {
-        return raffle.interface.parseLog(log);
-      }).find((event) => event && event.name === "WinnerPicked")
+      const winnerEvent = winnerReceipt?.logs
+        .map((log) => {
+          return raffle.interface.parseLog(log);
+        })
+        .find((event) => event && event.name === "WinnerPicked");
 
       const winner = winnerEvent?.args.winner;
       expect(winner).to.be.equal(await raffle.winner());
@@ -626,9 +625,11 @@ describe("Raffle", function () {
 
         const winnerReceipt = await winnerTx.wait();
 
-        const winnerEvent = winnerReceipt?.logs.map(log => {
-          return raffle.interface.parseLog(log);
-        }).find((event) => event && event.name === "WinnerPicked")
+        const winnerEvent = winnerReceipt?.logs
+          .map((log) => {
+            return raffle.interface.parseLog(log);
+          })
+          .find((event) => event && event.name === "WinnerPicked");
 
         const winner = winnerEvent?.args.winner;
 

@@ -154,8 +154,8 @@ contract Raffle {
                 return players[i];
             }
         }
-        // In case no winner is found (should not happen), return a default value
-        return address(0);
+        // This case should never occur if the function is implemented correctly
+        revert("No winner found - this should never happen");
     }
 
     /// See what would be the prize pool with the current treasury

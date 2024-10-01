@@ -539,5 +539,82 @@ describe("Raffle", function () {
         "A winner has already been selected",
       );
     });
+
+    it("Should pick a winner based on weighted randomness", async function () {
+
+      // Map to hold counts of wins
+      let winnerCounts: { [playerNumber: number]: number } = {
+        1: 0,
+        2: 0,
+        3: 0,
+      };
+
+      // Run pickWinner multiple times to check weighted randomness
+      for (let i = 0; i < 1000; i++) {
+        const { raffle, owner, token, players, ticketPrice } =
+          await loadFixture(deployRaffleFixture);
+        const [player1, player2, player3] = players;
+        // Players buy tickets
+
+        const ticketCost = ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER;
+
+        // Player 1
+        await token
+          .connect(player1)
+          .approve(await raffle.getAddress(), ticketCost);
+        await raffle.connect(player1).buyMediumTicketBundle(); // 1 ticket
+
+        // Player 2
+        await token
+          .connect(player2)
+          .approve(await raffle.getAddress(), ticketCost * 3n);
+        await raffle.connect(player2).buyMediumTicketBundle(); // 1 ticket
+        await raffle.connect(player2).buyMediumTicketBundle(); // Total 2 tickets
+        await raffle.connect(player2).buyMediumTicketBundle(); // Total 3 tickets
+
+        // Player 3
+        await token
+          .connect(player3)
+          .approve(await raffle.getAddress(), ticketCost);
+        await raffle.connect(player3).buyMediumTicketBundle(); // 1 ticket
+
+        // Simulate new block for randomness
+        await hre.network.provider.send("evm_increaseTime", [
+          Math.floor(Math.random() * 100),
+        ]);
+        await hre.network.provider.send("evm_mine");
+
+        time.increaseTo(generateDateInTheFuture(10));
+
+        let winnerTx = await raffle.connect(owner).finishRaffle(owner);
+
+        await winnerTx.wait();
+
+        const winner = await raffle.winner();
+
+        const winnerToPlayerNumber = (address: string): number => {
+          switch (winner) {
+            case player1.address:
+              return 1;
+            case player2.address:
+              return 2;
+            case player3.address:
+              return 3;
+            default:
+              throw new Error("Out of bounds!");
+          }
+        };
+
+        const winnerNumber = winnerToPlayerNumber(winner);
+
+        winnerCounts[winnerNumber] += 1;
+      }
+
+      console.log("Winner counts over 100 iterations:", winnerCounts);
+
+      // player2 should win approximately twice as often as player1 and player3
+      expect(winnerCounts[2]).to.be.greaterThan(winnerCounts[1]);
+      expect(winnerCounts[2]).to.be.greaterThan(winnerCounts[3]);
+    });
   });
 });

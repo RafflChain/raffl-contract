@@ -100,17 +100,17 @@ contract Raffle {
     }
 
     /// Buy an individual ticket
-    function buySmallTicketBundle(address referral) public returns (uint) {
+    function buySmallTicketBundle(address referral) external returns (uint) {
         return buyCollectionOfTickets(smallBundle, referral);
     }
 
     /// Buy a collection of 10 tickets
-    function buyMediumTicketBundle(address referral) public returns (uint) {
+    function buyMediumTicketBundle(address referral) external returns (uint) {
         return buyCollectionOfTickets(mediumBundle, referral);
     }
 
     /// Buy a collection of 100 tickets
-    function buyLargeTicketBundle(address referral) public returns (uint) {
+    function buyLargeTicketBundle(address referral) external returns (uint) {
         return buyCollectionOfTickets(largeBundle, referral);
     }
 

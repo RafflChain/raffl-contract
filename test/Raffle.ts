@@ -161,22 +161,28 @@ describe("Raffle", function () {
     const conditions: {
       amount: bigint;
       multiplier: bigint;
-      purchase: (contract: Raffle) => Promise<ContractTransactionResponse>;
+      purchase: (
+        contract: Raffle,
+        referral?: string,
+      ) => Promise<ContractTransactionResponse>;
     }[] = [
       {
         amount: SMALL_BUNDLE_AMOUNT,
         multiplier: 1n,
-        purchase: (raffle) => raffle.buySmallTicketBundle(NULL_ADDRESS),
+        purchase: (raffle, referral = NULL_ADDRESS) =>
+          raffle.buySmallTicketBundle(referral),
       },
       {
         amount: MEDIUM_BUNDLE_AMOUNT,
         multiplier: PRICE_MEDIUM_BUNDLE_MULTIPLIER,
-        purchase: (raffle) => raffle.buyMediumTicketBundle(NULL_ADDRESS),
+        purchase: (raffle, referral = NULL_ADDRESS) =>
+          raffle.buyMediumTicketBundle(referral),
       },
       {
         amount: LARGE_BUNDLE_AMOUNT,
         multiplier: PRICE_LARGE_BUNDLE_MULTIPLIER,
-        purchase: (raffle) => raffle.buyLargeTicketBundle(NULL_ADDRESS),
+        purchase: (raffle, referral = NULL_ADDRESS) =>
+          raffle.buyLargeTicketBundle(referral),
       },
     ];
 
@@ -371,6 +377,33 @@ describe("Raffle", function () {
           await expect(
             raffle.connect(player).getFreeTicket(),
           ).to.be.rejectedWith("User already owns tickets");
+        });
+
+        it("Should give one ticket to referral", async () => {
+          const { raffle, players, token, ticketPrice } =
+            await loadFixture(deployRaffleFixture);
+
+          const [player, referral] = players;
+          await token
+            .connect(player)
+            .approve(await raffle.getAddress(), ticketPrice * multiplier);
+          await purchase(raffle.connect(player), referral.address);
+
+          expect(await raffle.connect(referral).tickets(referral)).to.equal(1);
+        });
+
+        it("Should not let user refer itself", async () => {
+          const { raffle, players, token, ticketPrice } =
+            await loadFixture(deployRaffleFixture);
+
+          const [player] = players;
+          await token
+            .connect(player)
+            .approve(await raffle.getAddress(), ticketPrice * multiplier);
+
+          await expect(
+            purchase(raffle.connect(player), player.address),
+          ).to.be.rejectedWith("User can not refer themselves");
         });
       });
     });

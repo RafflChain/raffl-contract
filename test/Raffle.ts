@@ -15,7 +15,7 @@ describe("Raffle", function () {
   const MEDIUM_BUNDLE_AMOUNT = 200n;
   const LARGE_BUNDLE_AMOUNT = 660n;
 
-  const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
+  const NULL_ADDRESS = hre.ethers.ZeroAddress;
 
   async function deployRaffleFixture() {
     const ticketPrice = 2n;

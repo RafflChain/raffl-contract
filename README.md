@@ -14,6 +14,7 @@ Available commands:
 - `npm run test`: Test the smart contract.
   - You can add `REPORT_GAS=true` to the test.
 - `npx hardhat pub-type`: Deploy contract interface to npm.
+- `npx hardhat docgen`: To generate the contract documentation.
 
 ## Deploy contract
 

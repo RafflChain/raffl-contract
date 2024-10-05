@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 /// @title Raffle contract to start a raffle with as many users as possible
 /// @author @Bullrich
 /// @notice Only the deployer of the contract can finish the raffle
 /// @custom:security-contact info+security@rafflchain.com
 contract Raffle {
-    /// Array with all the players participating. Each user has tickets
-    address[] private players;
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    /// Set with all the players participating. Each user has tickets
+    EnumerableSet.AddressSet private players;
     /// Tickets each player owns
     mapping(address => uint) public tickets;
-
-    /// Mapping used to ensure that we don't have duplicate players
-    mapping(address => bool) private isPlayer;
 
     /// Emitted when the raffle is over
     event WinnerPicked(address winner);
@@ -75,10 +75,7 @@ contract Raffle {
         require(msg.sender != owner, "Owner cannot participate in the Raffle");
         require(msg.value >= bundle.price, "Insufficient funds");
         pot += msg.value;
-        if (!isPlayer[msg.sender]) {
-            isPlayer[msg.sender] = true;
-            players.push(msg.sender);
-        }
+        players.add(msg.sender);
         uint playerTickets = tickets[msg.sender];
         tickets[msg.sender] = playerTickets + bundle.amount;
 
@@ -90,7 +87,7 @@ contract Raffle {
     /// @dev the referring user must have own a ticket, proving that they are real accounts
     function addReferral(address referral) private {
         require(referral != msg.sender, "User can not refer themselves");
-        require(isPlayer[referral], "Can only refer a user who owns a ticket");
+        require(players.contains(referral), "Can only refer a user who owns a ticket");
 
         tickets[referral] += 1;
 
@@ -171,11 +168,10 @@ contract Raffle {
     /// User obtains a free ticket
     /// @notice only the fist ticket is free
     function getFreeTicket() public returns (uint) {
-        require(!isPlayer[msg.sender], "User already owns tickets");
         require(msg.sender != owner, "Owner can not participate in the Raffle");
+        require(!players.contains(msg.sender), "User already owns tickets");
 
-        isPlayer[msg.sender] = true;
-        players.push(msg.sender);
+        players.add(msg.sender);
         tickets[msg.sender] = 1;
 
         return 1;
@@ -194,8 +190,8 @@ contract Raffle {
     function listSoldTickets() public view returns (uint256) {
         require(msg.sender == owner, "Invoker must be the owner");
         uint ticketsSold = 0;
-        for (uint256 i = 0; i < players.length; i++) {
-            ticketsSold += tickets[players[i]];
+        for (uint256 i = 0; i < players.length(); i++) {
+            ticketsSold += tickets[players.at(i)];
         }
         return ticketsSold;
     }
@@ -212,10 +208,10 @@ contract Raffle {
 
         uint cumulativeSum = 0;
         // Iterate over players to find the winner
-        for (uint i = 0; i < players.length; i++) {
-            cumulativeSum += tickets[players[i]];
+        for (uint i = 0; i < players.length(); i++) {
+            cumulativeSum += tickets[players.at(i)];
             if (randomNumber < cumulativeSum) {
-                return players[i];
+                return players.at(i);
             }
         }
         // This case should never occur if the function is implemented correctly

@@ -86,13 +86,11 @@ contract Raffle {
 
     /// Gives a ticket to a user who refered this player
     /// @param referral address of the user to give the referal bonus
+    /// @dev the referring user must have own a ticket, proving that they are real accounts
     function addReferral(address referral) private {
         require(referral != msg.sender, "User can not refer themselves");
+        require(isPlayer[referral], "Can only refer a user who owns a ticket");
 
-        if (!isPlayer[referral]) {
-            isPlayer[referral] = true;
-            players.push(referral);
-        }
         tickets[referral] += 1;
     }
 

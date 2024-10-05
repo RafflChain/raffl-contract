@@ -12,7 +12,7 @@ on:
           - sepolia
           - mainnet
       price:
-        description: "Ticket Price"
+        description: "Ticket Price (in ETH)"
         required: true
         type: number
       duration:
@@ -20,10 +20,6 @@ on:
         required: true
         type: number
         default: 30
-      token:
-        description: "Address of the ERC20 token"
-        required: true
-        type: string
 
 jobs:
   deploy:
@@ -65,7 +61,6 @@ jobs:
         run: npx hardhat ignition deploy ignition/modules/Raffle.ts --network ${{ inputs.network }} --verify
         env:
           PRICE: ${{ inputs.price }}
-          TOKEN: ${{ inputs.token }}
           DURATION: ${{ inputs.duration }}
           HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
       - name: Get sepolia contract address

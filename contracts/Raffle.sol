@@ -222,19 +222,22 @@ contract Raffle {
         revert("No winner found - this should never happen");
     }
 
+    /// See how the prize would be distributed between end users
+    function prizeDistribution() public view returns (uint, uint, uint) {
+        uint prize = prizePool();
+        uint remainingPool = pot - prize;
+
+        uint donation = (remainingPool / 100) * 75;
+        uint commission = remainingPool - donation;
+        return (prize, donation, commission);
+    }
+
     /// See what would be the prize pool with the current treasury
     function prizePool() public view returns (uint) {
         if (pot > fixedPrize) {
             return fixedPrize;
         }
         return pot / 2;
-    }
-
-    /// See what amount would be donated to the charity with the current treasury
-    function donationAmount() public view returns (uint) {
-        uint halfOfPot = prizePool();
-        uint commision = (halfOfPot / 100) * 5;
-        return halfOfPot - commision;
     }
 
     /// Method used to finish a raffle
@@ -251,17 +254,15 @@ contract Raffle {
         emit WinnerPicked(winner);
 
         // Divide into parts
-        uint halfOfPot = prizePool();
-        uint donation = donationAmount();
-        uint commision = (pot - halfOfPot) - donation;
+        (uint prize, uint donation, uint commission) = prizeDistribution();
         // Send to the winner
-        (bool successWinner, ) = payable(winner).call{value: halfOfPot}("");
+        (bool successWinner, ) = payable(winner).call{value: prize}("");
         require(successWinner, "Failed to send prize to winner");
         // Send to the charity address
         (bool successDonation, ) = donationAddress.call{value: donation}("");
         require(successDonation, "Failed to send donation");
         // Get the commision
-        (bool successOwner, ) = payable(owner).call{value: commision}("");
+        (bool successOwner, ) = payable(owner).call{value: commission}("");
         require(successOwner, "Failed to send commission to owner");
 
         return winner;

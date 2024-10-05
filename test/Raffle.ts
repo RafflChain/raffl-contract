@@ -15,8 +15,6 @@ describe("Raffle", function () {
   const MEDIUM_BUNDLE_AMOUNT = 200n;
   const LARGE_BUNDLE_AMOUNT = 660n;
 
-  const NULL_ADDRESS = hre.ethers.ZeroAddress;
-
   async function deployRaffleFixture() {
     const ticketPrice = 2n;
     const unlockDays = 2;
@@ -169,20 +167,26 @@ describe("Raffle", function () {
       {
         amount: SMALL_BUNDLE_AMOUNT,
         multiplier: 1n,
-        purchase: (raffle, referral = NULL_ADDRESS) =>
-          raffle.buySmallTicketBundle(referral),
+        purchase: (raffle, referral) =>
+          referral
+            ? raffle.buySmallTicketBundleWithReferral(referral)
+            : raffle.buySmallTicketBundle(),
       },
       {
         amount: MEDIUM_BUNDLE_AMOUNT,
         multiplier: PRICE_MEDIUM_BUNDLE_MULTIPLIER,
-        purchase: (raffle, referral = NULL_ADDRESS) =>
-          raffle.buyMediumTicketBundle(referral),
+        purchase: (raffle, referral) =>
+          referral
+            ? raffle.buyMediumTicketBundleWithReferral(referral)
+            : raffle.buyMediumTicketBundle(),
       },
       {
         amount: LARGE_BUNDLE_AMOUNT,
         multiplier: PRICE_LARGE_BUNDLE_MULTIPLIER,
-        purchase: (raffle, referral = NULL_ADDRESS) =>
-          raffle.buyLargeTicketBundle(referral),
+        purchase: (raffle, referral) =>
+          referral
+            ? raffle.buyLargeTicketBundleWithReferral(referral)
+            : raffle.buyLargeTicketBundle(),
       },
     ];
 
@@ -252,7 +256,7 @@ describe("Raffle", function () {
             .connect(player)
             .approve(await raffle.getAddress(), ticketPrice * 2n * multiplier);
           // Buy 1 ticket and verify that the player has 1 ticket
-          await playerRaffle.buySmallTicketBundle(NULL_ADDRESS);
+          await playerRaffle.buySmallTicketBundle();
           const smallBundle = await raffle.smallBundle();
           expect(await playerRaffle.tickets(player)).to.equal(
             smallBundle.amount,
@@ -282,9 +286,9 @@ describe("Raffle", function () {
           await token
             .connect(player2)
             .approve(await raffle.getAddress(), ticketPrice * 3n);
-          await rafflePlayer2.buySmallTicketBundle(NULL_ADDRESS);
-          await rafflePlayer2.buySmallTicketBundle(NULL_ADDRESS);
-          await rafflePlayer2.buySmallTicketBundle(NULL_ADDRESS);
+          await rafflePlayer2.buySmallTicketBundle();
+          await rafflePlayer2.buySmallTicketBundle();
+          await rafflePlayer2.buySmallTicketBundle();
           expect(await rafflePlayer2.tickets(player2)).to.equal(
             SMALL_BUNDLE_AMOUNT * 3n,
           );
@@ -423,7 +427,7 @@ describe("Raffle", function () {
       await token
         .connect(player)
         .approve(rAddress, ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
-      await raffle.connect(player).buyMediumTicketBundle(NULL_ADDRESS);
+      await raffle.connect(player).buyMediumTicketBundle();
       raffleInstance = raffle;
     });
 
@@ -481,7 +485,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         );
-      await raffle.connect(player).buyMediumTicketBundle(NULL_ADDRESS);
+      await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
 
@@ -501,7 +505,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         );
-      await raffle.connect(player).buyMediumTicketBundle(NULL_ADDRESS);
+      await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
 
@@ -522,7 +526,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
         );
-      await raffle.connect(player).buyLargeTicketBundle(NULL_ADDRESS);
+      await raffle.connect(player).buyLargeTicketBundle();
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER);
 
@@ -547,7 +551,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         );
-      await raffle.connect(player).buyMediumTicketBundle(NULL_ADDRESS);
+      await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
 
       time.increaseTo(generateDateInTheFuture(10));
@@ -568,7 +572,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         );
-      await raffle.connect(player).buyMediumTicketBundle(NULL_ADDRESS);
+      await raffle.connect(player).buyMediumTicketBundle();
 
       time.increaseTo(generateDateInTheFuture(5));
       const winnerTx = await raffle.connect(owner).finishRaffle(random);
@@ -588,7 +592,7 @@ describe("Raffle", function () {
           await raffle.getAddress(),
           ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         );
-      await raffle.connect(player).buyMediumTicketBundle(NULL_ADDRESS);
+      await raffle.connect(player).buyMediumTicketBundle();
       const pot = await raffle.pot();
 
       time.increaseTo(generateDateInTheFuture(10));
@@ -624,21 +628,21 @@ describe("Raffle", function () {
         await token
           .connect(player1)
           .approve(await raffle.getAddress(), ticketCost);
-        await raffle.connect(player1).buyMediumTicketBundle(NULL_ADDRESS); // 1 ticket
+        await raffle.connect(player1).buyMediumTicketBundle(); // 1 ticket
 
         // Player 2
         await token
           .connect(player2)
           .approve(await raffle.getAddress(), ticketCost * 3n);
-        await raffle.connect(player2).buyMediumTicketBundle(NULL_ADDRESS); // 1 ticket
-        await raffle.connect(player2).buyMediumTicketBundle(NULL_ADDRESS); // Total 2 tickets
-        await raffle.connect(player2).buyMediumTicketBundle(NULL_ADDRESS); // Total 3 tickets
+        await raffle.connect(player2).buyMediumTicketBundle(); // 1 ticket
+        await raffle.connect(player2).buyMediumTicketBundle(); // Total 2 tickets
+        await raffle.connect(player2).buyMediumTicketBundle(); // Total 3 tickets
 
         // Player 3
         await token
           .connect(player3)
           .approve(await raffle.getAddress(), ticketCost);
-        await raffle.connect(player3).buyMediumTicketBundle(NULL_ADDRESS); // 1 ticket
+        await raffle.connect(player3).buyMediumTicketBundle(); // 1 ticket
 
         // Simulate new block for randomness
         await hre.network.provider.send("evm_increaseTime", [

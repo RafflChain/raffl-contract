@@ -103,7 +103,7 @@ contract Raffle {
 
     /// Buy a small bundle of tickets and gives a referral ticket
     /// @param referral Address to give a referral ticket on purchaser
-    function buySmallTicketBundle(address referral) external returns (uint) {
+    function buySmallTicketBundleWithReferral(address referral) external returns (uint) {
         uint receipt = buyCollectionOfTickets(smallBundle);
         if (referral != address(0)) {
             addReferral(referral);
@@ -118,7 +118,7 @@ contract Raffle {
 
     /// Buys a medium bundle of tickets and gives a referral ticket
     /// @param referral Address to give a referral ticket on purchaser
-    function buyMediumTicketBundle(address referral) external returns (uint) {
+    function buyMediumTicketBundleWithReferral(address referral) external returns (uint) {
         uint receipt = buyCollectionOfTickets(mediumBundle);
 
         if (referral != address(0)) {
@@ -134,7 +134,7 @@ contract Raffle {
 
     /// Buy a large bundle of tickets and gives a referral ticket
     /// @param referral Address to give a referral ticket on purchaser
-    function buyLargeTicketBundle(address referral) external returns (uint) {
+    function buyLargeTicketBundleWithReferral(address referral) external returns (uint) {
         uint receipt = buyCollectionOfTickets(largeBundle);
 
         if (referral != address(0)) {

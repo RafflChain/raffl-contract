@@ -639,11 +639,9 @@ describe("Raffle", function () {
           await loadFixture(deployRaffleFixture);
         const [player] = players;
 
-        await raffle
-          .connect(player)
-          .buyMediumTicketBundle({
-            value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
-          });
+        await raffle.connect(player).buyMediumTicketBundle({
+          value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
+        });
         const pot = await raffle.pot();
         expect(await raffle.prizePool()).to.be.equal(pot / 2n);
       });

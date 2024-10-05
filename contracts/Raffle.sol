@@ -95,41 +95,41 @@ contract Raffle {
     }
 
     /// Buy a small bundle of tickets
-    function buySmallTicketBundle() external returns (uint) {
+    function buySmallTicketBundle() public returns (uint) {
         return buyCollectionOfTickets(smallBundle);
     }
 
     /// Buy a small bundle of tickets and gives a referral ticket
     /// @param referral Address to give a referral ticket on purchaser
     function buySmallTicketBundleWithReferral(address referral) external returns (uint) {
-        uint receipt = buyCollectionOfTickets(smallBundle);
+        uint receipt = buySmallTicketBundle();
         addReferral(referral);
         return receipt;
     }
 
     /// Buy a medium bundle of tickets
-    function buyMediumTicketBundle() external returns (uint) {
+    function buyMediumTicketBundle() public returns (uint) {
         return buyCollectionOfTickets(mediumBundle);
     }
 
     /// Buys a medium bundle of tickets and gives a referral ticket
     /// @param referral Address to give a referral ticket on purchaser
     function buyMediumTicketBundleWithReferral(address referral) external returns (uint) {
-        uint receipt = buyCollectionOfTickets(mediumBundle);
+        uint receipt = buyMediumTicketBundle();
 
         addReferral(referral);
         return receipt;
     }
 
     /// Buys a large bundle of tickets
-    function buyLargeTicketBundle() external returns (uint) {
+    function buyLargeTicketBundle() public returns (uint) {
         return buyCollectionOfTickets(largeBundle);
     }
 
     /// Buy a large bundle of tickets and gives a referral ticket
     /// @param referral Address to give a referral ticket on purchaser
     function buyLargeTicketBundleWithReferral(address referral) external returns (uint) {
-        uint receipt = buyCollectionOfTickets(largeBundle);
+        uint receipt = buyLargeTicketBundle();
 
         addReferral(referral);
         return receipt;

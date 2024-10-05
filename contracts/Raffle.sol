@@ -218,11 +218,14 @@ contract Raffle {
         uint donation = donationAmount();
         uint commision = (pot - halfOfPot) - donation;
         // Send to the winner
-        payable(winner).transfer(halfOfPot);
+        (bool successWinner, ) = payable(winner).call{value: halfOfPot}("");
+        require(successWinner, "Failed to send prize to winner");
         // Send to the charity address
-        donationAddress.transfer(donation);
+        (bool successDonation, ) = donationAddress.call{value: donation}("");
+        require(successDonation, "Failed to send donation");
         // Get the commision
-        payable(owner).transfer(commision);
+        (bool successOwner, ) = payable(owner).call{value: commision}("");
+        require(successOwner, "Failed to send commission to owner");
 
         return winner;
     }

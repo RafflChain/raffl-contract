@@ -223,6 +223,10 @@ contract Raffle {
     }
 
     /// See how the prize would be distributed between end users
+    /// @return prize that will go to the winner.
+    /// Usually it's s fixedPrize but if that amount is not reached, then it's half of the pot.
+    /// @return donation amount. It's 75% of the remaining pot.
+    /// @return commission that will go to the contract owner.
     function prizeDistribution() public view returns (uint, uint, uint) {
         uint prize = prizePool();
         uint remainingPool = pot - prize;

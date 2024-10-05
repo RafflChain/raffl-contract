@@ -2,11 +2,13 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 /// @title Raffle contract to start a raffle with as many users as possible
 /// @author @Bullrich
 /// @notice Only the deployer of the contract can finish the raffle
 /// @custom:security-contact info+security@rafflchain.com
-contract Raffle {
+contract Raffle is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// Set with all the players participating. Each user has tickets
@@ -20,9 +22,6 @@ contract Raffle {
     /// Emitted when a user is referred
     event Referred(address referral);
 
-    /// Address of the deployer of the contract.
-    /// @notice This is the user that can finalize the raffle and receives the commision
-    address private immutable owner;
     /// Timestamp of when the raffle ends
     uint public immutable raffleEndDate;
     /// Total amount of the tokens in the contract
@@ -60,10 +59,9 @@ contract Raffle {
     /// @param ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
     /// @param _fixedPrize the prize pool that we are aiming to reach. Exceding pot will go to charity
-    constructor(uint ticketPrice, uint8 daysToEndDate, uint _fixedPrize) {
+    constructor(uint ticketPrice, uint8 daysToEndDate, uint _fixedPrize) Ownable(msg.sender) {
         raffleEndDate = getFutureTimestamp(daysToEndDate);
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
-        owner = msg.sender;
 
         require(_fixedPrize > ticketPrice, "Fixed prize must be greater than ticket price");
         fixedPrize = _fixedPrize;
@@ -78,9 +76,9 @@ contract Raffle {
     /// @param priceOfBundle the amount to puy for the bundle
     function buyCollectionOfTickets(uint sizeOfBundle, uint priceOfBundle) private returns (uint) {
         require(block.timestamp < raffleEndDate, "Raffle is over");
-        require(msg.sender != owner, "Owner cannot participate in the Raffle");
         require(sizeOfBundle > 0, "Can not buy 0 tickets");
         require(priceOfBundle > 0, "Can not buy 0 for 0");
+        require(msg.sender != owner(), "Owner cannot participate in the Raffle");
         require(msg.value >= priceOfBundle, "Insufficient funds");
         pot += msg.value;
         players.add(msg.sender);
@@ -145,7 +143,7 @@ contract Raffle {
 
     /// Fallback function for when ethers is transfered randomly to this contract
     receive() external payable {
-        require(msg.sender != owner, "Owner cannot participate in the Raffle");
+        require(msg.sender != owner(), "Owner cannot participate in the Raffle");
         require(block.timestamp < raffleEndDate, "Raffle is over");
 
         uint selectedBundle;
@@ -177,8 +175,8 @@ contract Raffle {
     /// User obtains a free ticket
     /// @notice only the fist ticket is free
     function getFreeTicket() public returns (uint) {
-        require(msg.sender != owner, "Owner can not participate in the Raffle");
         require(!players.contains(msg.sender), "User already owns tickets");
+        require(msg.sender != owner(), "Owner can not participate in the Raffle");
 
         players.add(msg.sender);
         tickets[msg.sender] = 1;
@@ -196,8 +194,7 @@ contract Raffle {
 
     /// Calculate the total number of tickets
     /// @notice Can only be invoked by the contract owner
-    function listSoldTickets() public view returns (uint256) {
-        require(msg.sender == owner, "Invoker must be the owner");
+    function listSoldTickets() public view onlyOwner returns (uint256) {
         uint ticketsSold = 0;
         for (uint256 i = 0; i < players.length(); i++) {
             ticketsSold += tickets[players.at(i)];
@@ -252,8 +249,7 @@ contract Raffle {
     /// Method used to finish a raffle
     /// @param donationAddress Address of the charity that will receive the tokens
     /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
-    function finishRaffle(address payable donationAddress) public returns (address) {
-        require(msg.sender == owner, "Invoker must be the owner");
+    function finishRaffle(address payable donationAddress) external onlyOwner returns (address) {
         require(block.timestamp > raffleEndDate, "End date has not being reached yet");
         require(pot > 0, "The pot is empty. Raffle is invalid");
         require(winner == address(0), "A winner has already been selected");
@@ -271,7 +267,7 @@ contract Raffle {
         (bool successDonation, ) = donationAddress.call{value: donation}("");
         require(successDonation, "Failed to send donation");
         // Get the commision
-        (bool successOwner, ) = payable(owner).call{value: commission}("");
+        (bool successOwner, ) = payable(owner()).call{value: commission}("");
         require(successOwner, "Failed to send commission to owner");
 
         return winner;

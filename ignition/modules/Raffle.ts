@@ -19,7 +19,7 @@ export default buildModule("Deployment", (m) => {
   const raffle = m.contract("Raffle", [
     hre.ethers.parseUnits(env.PRICE.toString(), "ether"),
     env.DURATION,
-    hre.ethers.parseUnits(env.PRICE.toString(), "ether"),
+    hre.ethers.parseUnits(env.FIXED_PRIZE.toString(), "ether"),
   ]);
 
   return { raffle };

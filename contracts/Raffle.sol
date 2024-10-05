@@ -42,14 +42,20 @@ contract Raffle {
         uint price;
     }
 
-    /// Price and amount of the small bundle
-    Bundle public smallBundle;
-    /// Price and amount of the medium bundle
+    /// Size of the small bundle
+    uint public constant SMALL_BUNDLE_AMOUNT = 45;
+    /// Price of the small bundle
+    uint public immutable smallBundlePrice;
+    /// Size of the medium bundle
+    uint public constant MEDIUM_BUNDLE_AMOUNT = 200;
+    /// Price of the medium bundle
     /// @notice the final price should be discounted than buying the same amount of small bundles
-    Bundle public mediumBundle;
-    /// Price and amount of the big bundle
+    uint public immutable mediumBundlePrice;
+    /// Size of the large bundle
+    uint public constant LARGE_BUNDLE_AMOUNT = 660;
+    /// Prize of the large bundle
     /// @notice the final price should be discounted than buying the same amount of small bundles
-    Bundle public largeBundle;
+    uint public immutable largeBundlePrice;
 
     /// @param ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
@@ -62,24 +68,26 @@ contract Raffle {
         require(_fixedPrize > ticketPrice, "Fixed prize must be greater than ticket price");
         fixedPrize = _fixedPrize;
 
-        smallBundle = Bundle(45, ticketPrice);
-        mediumBundle = Bundle(200, ticketPrice * 3);
-        largeBundle = Bundle(660, ticketPrice * 5);
+        smallBundlePrice = ticketPrice;
+        mediumBundlePrice = ticketPrice * 3;
+        largeBundlePrice = ticketPrice * 5;
     }
 
     /// Utility method used to buy any given amount of tickets
-    /// @param bundle the bundle that will be purchased
-    function buyCollectionOfTickets(Bundle memory bundle) private returns (uint) {
+    /// @param sizeOfBundle the number of tickets that will be purchased
+    /// @param priceOfBundle the amount to puy for the bundle
+    function buyCollectionOfTickets(uint sizeOfBundle, uint priceOfBundle) private returns (uint) {
         require(block.timestamp < raffleEndDate, "Raffle is over");
-        require(bundle.amount > 0, "Can not buy 0 tickets");
         require(msg.sender != owner, "Owner cannot participate in the Raffle");
-        require(msg.value >= bundle.price, "Insufficient funds");
+        require(sizeOfBundle > 0, "Can not buy 0 tickets");
+        require(priceOfBundle > 0, "Can not buy 0 for 0");
+        require(msg.value >= priceOfBundle, "Insufficient funds");
         pot += msg.value;
         players.add(msg.sender);
         uint playerTickets = tickets[msg.sender];
-        tickets[msg.sender] = playerTickets + bundle.amount;
+        tickets[msg.sender] = playerTickets + sizeOfBundle;
 
-        return bundle.amount;
+        return sizeOfBundle;
     }
 
     /// Gives a ticket to a user who refered this player
@@ -96,7 +104,7 @@ contract Raffle {
 
     /// Buy a small bundle of tickets
     function buySmallTicketBundle() public payable returns (uint) {
-        return buyCollectionOfTickets(smallBundle);
+        return buyCollectionOfTickets(SMALL_BUNDLE_AMOUNT, smallBundlePrice);
     }
 
     /// Buy a small bundle of tickets and gives a referral ticket
@@ -109,7 +117,7 @@ contract Raffle {
 
     /// Buy a medium bundle of tickets
     function buyMediumTicketBundle() public payable returns (uint) {
-        return buyCollectionOfTickets(mediumBundle);
+        return buyCollectionOfTickets(MEDIUM_BUNDLE_AMOUNT, mediumBundlePrice);
     }
 
     /// Buys a medium bundle of tickets and gives a referral ticket
@@ -123,7 +131,7 @@ contract Raffle {
 
     /// Buys a large bundle of tickets
     function buyLargeTicketBundle() public payable returns (uint) {
-        return buyCollectionOfTickets(largeBundle);
+        return buyCollectionOfTickets(LARGE_BUNDLE_AMOUNT, largeBundlePrice);
     }
 
     /// Buy a large bundle of tickets and gives a referral ticket
@@ -140,28 +148,29 @@ contract Raffle {
         require(msg.sender != owner, "Owner cannot participate in the Raffle");
         require(block.timestamp < raffleEndDate, "Raffle is over");
 
-        Bundle memory selectedBundle;
+        uint selectedBundle;
 
         // We check if we can purchase any amount
-        if (msg.value >= largeBundle.price) {
-            selectedBundle = largeBundle;
-        } else if (msg.value >= mediumBundle.price) {
-            selectedBundle = mediumBundle;
-        } else if (msg.value >= smallBundle.price) {
-            selectedBundle = smallBundle;
+        if (msg.value >= largeBundlePrice) {
+            selectedBundle = LARGE_BUNDLE_AMOUNT;
+        } else if (msg.value >= mediumBundlePrice) {
+            selectedBundle = MEDIUM_BUNDLE_AMOUNT;
+        } else if (msg.value >= smallBundlePrice) {
+            selectedBundle = SMALL_BUNDLE_AMOUNT;
         } else {
             revert("Incorrect payment amount");
         }
 
-        buyCollectionOfTickets(selectedBundle);
+        buyCollectionOfTickets(selectedBundle, msg.value);
     }
 
     /// Returns all the available bundles sorted from smaller to bigger
     function getBundles() public view returns (Bundle[] memory) {
         Bundle[] memory bundles = new Bundle[](3);
-        bundles[0] = smallBundle;
-        bundles[1] = mediumBundle;
-        bundles[2] = largeBundle;
+        bundles[0] = Bundle(SMALL_BUNDLE_AMOUNT, smallBundlePrice);
+        bundles[1] = Bundle(MEDIUM_BUNDLE_AMOUNT, mediumBundlePrice);
+        bundles[2] = Bundle(LARGE_BUNDLE_AMOUNT, largeBundlePrice);
+
         return bundles;
     }
 

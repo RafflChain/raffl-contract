@@ -28,6 +28,10 @@ contract Raffle {
     /// Total amount of the tokens in the contract
     uint public pot;
 
+    /// The fixed price that will be given to the winner
+    /// @dev This is if that amount gets reached, if not the pot is split in half
+    uint public fixedPrize;
+
     /// Address of the winner
     /// @dev this value is set up only after the raffle end
     address public winner;
@@ -49,10 +53,13 @@ contract Raffle {
 
     /// @param ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
-    constructor(uint ticketPrice, uint8 daysToEndDate) {
+    /// @param _fixedPrize the prize pool that we are aiming to reach. Exceding pot will go to charity
+    constructor(uint ticketPrice, uint8 daysToEndDate, uint _fixedPrize) {
         raffleEndDate = getFutureTimestamp(daysToEndDate);
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
+
+        fixedPrize = _fixedPrize;
 
         smallBundle = Bundle(45, ticketPrice);
         mediumBundle = Bundle(200, ticketPrice * 3);
@@ -216,6 +223,9 @@ contract Raffle {
 
     /// See what would be the prize pool with the current treasury
     function prizePool() public view returns (uint) {
+        if (pot > fixedPrize) {
+            return fixedPrize;
+        }
         return pot / 2;
     }
 

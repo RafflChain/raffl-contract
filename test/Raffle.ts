@@ -664,7 +664,7 @@ describe("Raffle", function () {
       });
 
       it("Should divide the pot between winner, donation campaign and comission with a complete prize", async () => {
-        const { raffle, owner, players, ticketPrice, prize } =
+        const { raffle, owner, players, prize } =
           await loadFixture(deployRaffleFixture);
         const [player, donation] = players;
         await player.sendTransaction({ to: raffle, value: prize * 5n });
@@ -672,12 +672,12 @@ describe("Raffle", function () {
         expect(pot).to.equal(prize * 5n);
 
         time.increaseTo(generateDateInTheFuture(10));
-        const comission = ((pot - prize) / 100n) * 25n;
+        const commission = ((pot - prize) / 100n) * 25n;
         await expect(
           raffle.connect(owner).finishRaffle(donation),
         ).to.changeEtherBalances(
           [player, donation, owner],
-          [prize, pot - prize - comission, comission],
+          [prize, pot - prize - commission, commission],
         );
       });
     });

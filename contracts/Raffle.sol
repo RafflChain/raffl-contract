@@ -44,16 +44,16 @@ contract Raffle {
     /// @notice the final price should be discounted than buying the same amount of small bundles
     Bundle public largeBundle;
 
-    /// @param _ticketPrice Price of each ticket (without the decimals)
+    /// @param ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
-    constructor(uint _ticketPrice, uint8 daysToEndDate) {
+    constructor(uint ticketPrice, uint8 daysToEndDate) {
         raffleEndDate = getFutureTimestamp(daysToEndDate);
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
 
-        smallBundle = Bundle(45, _ticketPrice);
-        mediumBundle = Bundle(200, _ticketPrice * 3);
-        largeBundle = Bundle(660, _ticketPrice * 5);
+        smallBundle = Bundle(45, ticketPrice);
+        mediumBundle = Bundle(200, ticketPrice * 3);
+        largeBundle = Bundle(660, ticketPrice * 5);
     }
 
     /// Utility method used to buy any given amount of tickets

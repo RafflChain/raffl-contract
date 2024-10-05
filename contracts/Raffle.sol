@@ -11,6 +11,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Raffle is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    error RaffleOver();
+    error OwnerCannotParticipate();
+    error InvalidPurchase();
+    error InsufficientFunds();
+    error InvalidReferal(string);
+    error InvalidTimestamp();
+    error FreeTicketClaimed();
+    error ErrorFinishing(string);
+    error TransferFailed(uint, address);
+
     /// Set with all the players participating. Each user has tickets
     EnumerableSet.AddressSet private players;
     /// Tickets each player owns
@@ -61,9 +71,9 @@ contract Raffle is Ownable {
     /// @param _fixedPrize the prize pool that we are aiming to reach. Exceding pot will go to charity
     constructor(uint ticketPrice, uint8 daysToEndDate, uint _fixedPrize) Ownable(msg.sender) {
         raffleEndDate = getFutureTimestamp(daysToEndDate);
-        require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
+        if (block.timestamp > raffleEndDate) revert InvalidTimestamp();
 
-        require(_fixedPrize > ticketPrice, "Fixed prize must be greater than ticket price");
+        if (_fixedPrize < ticketPrice) revert InvalidPurchase();
         fixedPrize = _fixedPrize;
 
         smallBundlePrice = ticketPrice;
@@ -75,11 +85,10 @@ contract Raffle is Ownable {
     /// @param sizeOfBundle the number of tickets that will be purchased
     /// @param priceOfBundle the amount to puy for the bundle
     function buyCollectionOfTickets(uint sizeOfBundle, uint priceOfBundle) private returns (uint) {
-        require(block.timestamp < raffleEndDate, "Raffle is over");
-        require(sizeOfBundle > 0, "Can not buy 0 tickets");
-        require(priceOfBundle > 0, "Can not buy 0 for 0");
-        require(msg.sender != owner(), "Owner cannot participate in the Raffle");
-        require(msg.value >= priceOfBundle, "Insufficient funds");
+        if (block.timestamp > raffleEndDate) revert RaffleOver();
+        if (!(sizeOfBundle > 0 && priceOfBundle > 0)) revert InvalidPurchase();
+        if (msg.sender == owner()) revert OwnerCannotParticipate();
+        if (msg.value < priceOfBundle) revert InsufficientFunds();
         pot += msg.value;
         players.add(msg.sender);
         uint playerTickets = tickets[msg.sender];
@@ -92,8 +101,8 @@ contract Raffle is Ownable {
     /// @param referral address of the user to give the referal bonus
     /// @dev the referring user must have own a ticket, proving that they are real accounts
     function addReferral(address referral) private {
-        require(referral != msg.sender, "User can not refer themselves");
-        require(players.contains(referral), "Can only refer a user who owns a ticket");
+        if (referral == msg.sender) revert InvalidReferal("Refering themselves");
+        if (!players.contains(referral)) revert InvalidReferal("Not a player");
 
         tickets[referral] += 1;
 
@@ -143,8 +152,8 @@ contract Raffle is Ownable {
 
     /// Fallback function for when ethers is transfered randomly to this contract
     receive() external payable {
-        require(msg.sender != owner(), "Owner cannot participate in the Raffle");
-        require(block.timestamp < raffleEndDate, "Raffle is over");
+        if (msg.sender == owner()) revert OwnerCannotParticipate();
+        if (block.timestamp > raffleEndDate) revert RaffleOver();
 
         uint selectedBundle;
 
@@ -156,7 +165,7 @@ contract Raffle is Ownable {
         } else if (msg.value >= smallBundlePrice) {
             selectedBundle = SMALL_BUNDLE_AMOUNT;
         } else {
-            revert("Incorrect payment amount");
+            revert InsufficientFunds();
         }
 
         buyCollectionOfTickets(selectedBundle, msg.value);
@@ -175,9 +184,8 @@ contract Raffle is Ownable {
     /// User obtains a free ticket
     /// @notice only the fist ticket is free
     function getFreeTicket() public returns (uint) {
-        require(!players.contains(msg.sender), "User already owns tickets");
-        require(msg.sender != owner(), "Owner can not participate in the Raffle");
-
+        if (players.contains(msg.sender)) revert FreeTicketClaimed();
+        if (msg.sender == owner()) revert OwnerCannotParticipate();
         players.add(msg.sender);
         tickets[msg.sender] = 1;
 
@@ -186,7 +194,7 @@ contract Raffle is Ownable {
 
     /// Function to calculate the timestamp X days from now
     function getFutureTimestamp(uint8 daysFromNow) private view returns (uint256) {
-        require(daysFromNow > 0, "Future timestamp must be at least 1 day");
+        if (daysFromNow == 0) revert InvalidTimestamp();
         // Convert days to seconds
         uint256 futureTimestamp = block.timestamp + (daysFromNow * 1 days);
         return futureTimestamp;
@@ -206,7 +214,7 @@ contract Raffle is Ownable {
     /// @notice the algorithm randomness can be predicted if triggered automatically, better to do it manually
     function pickRandomWinner() private view returns (address) {
         uint totalTickets = listSoldTickets();
-        require(totalTickets > 0, "No tickets sold");
+        if (totalTickets == 0) revert ErrorFinishing("No players");
 
         // Generate a pseudo-random number based on block variables
         uint randomNumber = uint(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, block.number))) %
@@ -221,7 +229,7 @@ contract Raffle is Ownable {
             }
         }
         // This case should never occur if the function is implemented correctly
-        revert("No winner found - this should never happen");
+        revert ErrorFinishing("Unknown");
     }
 
     /// See how the prize would be distributed between end users
@@ -250,9 +258,8 @@ contract Raffle is Ownable {
     /// @param donationAddress Address of the charity that will receive the tokens
     /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
     function finishRaffle(address payable donationAddress) external onlyOwner returns (address) {
-        require(block.timestamp > raffleEndDate, "End date has not being reached yet");
-        require(pot > 0, "The pot is empty. Raffle is invalid");
-        require(winner == address(0), "A winner has already been selected");
+        if (block.timestamp > raffleEndDate) revert RaffleOver();
+        if (winner != address(0)) revert RaffleOver();
 
         winner = pickRandomWinner();
 
@@ -262,13 +269,13 @@ contract Raffle is Ownable {
         (uint prize, uint donation, uint commission) = prizeDistribution();
         // Send to the winner
         (bool successWinner, ) = payable(winner).call{value: prize}("");
-        require(successWinner, "Failed to send prize to winner");
+        if (!successWinner) revert TransferFailed(prize, winner);
         // Send to the charity address
         (bool successDonation, ) = donationAddress.call{value: donation}("");
-        require(successDonation, "Failed to send donation");
+        if (!successDonation) revert TransferFailed(donation, donationAddress);
         // Get the commision
         (bool successOwner, ) = payable(owner()).call{value: commission}("");
-        require(successOwner, "Failed to send commission to owner");
+        if (!successOwner) revert TransferFailed(commission, owner());
 
         return winner;
     }

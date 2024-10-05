@@ -16,7 +16,7 @@ describe("Raffle", function () {
   const LARGE_BUNDLE_AMOUNT = 660n;
 
   async function deployRaffleFixture() {
-    const ticketPrice = 2n;
+    const ticketPrice = hre.ethers.parseUnits("0.005", "ether");
     const unlockDays = 2;
 
     // Contracts are deployed using the first signer/account by default
@@ -24,26 +24,16 @@ describe("Raffle", function () {
     const [owner] = signers;
     const players = signers.slice(2);
 
-    const DemoToken = await hre.ethers.getContractFactory("RaffleToken");
-    const token = await DemoToken.deploy();
-    const tokenAddress = await token.getAddress();
-
-    const decimals: bigint = await token.decimals();
-    for (let i = 0; i < 5; i++) {
-      const transferAmount = ticketPrice * 10n ** decimals * 100n;
-      await token.connect(owner).transfer(players[i].address, transferAmount);
-    }
 
     const Raffle = await hre.ethers.getContractFactory("Raffle");
-    const raffle = await Raffle.deploy(ticketPrice, 2, tokenAddress);
+    const raffle = await Raffle.deploy(ticketPrice, 2);
 
     return {
       raffle,
       unlockDays,
-      ticketPrice: ticketPrice * 10n ** decimals,
+      ticketPrice: ticketPrice,
       owner,
       players,
-      token,
     };
   }
 
@@ -65,16 +55,10 @@ describe("Raffle", function () {
     });
 
     it("Should fail if the deployment time is not in the future", async () => {
-      const { token } = await loadFixture(deployRaffleFixture);
       const Raffle = await hre.ethers.getContractFactory("Raffle");
-      await expect(Raffle.deploy(10, 0, token)).to.rejectedWith(
+      await expect(Raffle.deploy(10, 0)).to.rejectedWith(
         "Future timestamp must be at least 1 day",
       );
-    });
-
-    it("Should set the token address", async () => {
-      const { raffle, token } = await loadFixture(deployRaffleFixture);
-      expect(await raffle.token()).to.equal(await token.getAddress());
     });
 
     it("Should set the correct small ticket bundle", async () => {
@@ -161,46 +145,43 @@ describe("Raffle", function () {
       multiplier: bigint;
       purchase: (
         contract: Raffle,
+        value: bigint,
         referral?: string,
       ) => Promise<ContractTransactionResponse>;
     }[] = [
-      {
-        amount: SMALL_BUNDLE_AMOUNT,
-        multiplier: 1n,
-        purchase: (raffle, referral) =>
-          referral
-            ? raffle.buySmallTicketBundleWithReferral(referral)
-            : raffle.buySmallTicketBundle(),
-      },
-      {
-        amount: MEDIUM_BUNDLE_AMOUNT,
-        multiplier: PRICE_MEDIUM_BUNDLE_MULTIPLIER,
-        purchase: (raffle, referral) =>
-          referral
-            ? raffle.buyMediumTicketBundleWithReferral(referral)
-            : raffle.buyMediumTicketBundle(),
-      },
-      {
-        amount: LARGE_BUNDLE_AMOUNT,
-        multiplier: PRICE_LARGE_BUNDLE_MULTIPLIER,
-        purchase: (raffle, referral) =>
-          referral
-            ? raffle.buyLargeTicketBundleWithReferral(referral)
-            : raffle.buyLargeTicketBundle(),
-      },
-    ];
+        {
+          amount: SMALL_BUNDLE_AMOUNT,
+          multiplier: 1n,
+          purchase: (raffle, value, referral) =>
+            referral
+              ? raffle.buySmallTicketBundleWithReferral(referral, { value })
+              : raffle.buySmallTicketBundle({ value }),
+        },
+        {
+          amount: MEDIUM_BUNDLE_AMOUNT,
+          multiplier: PRICE_MEDIUM_BUNDLE_MULTIPLIER,
+          purchase: (raffle, value, referral) =>
+            referral
+              ? raffle.buyMediumTicketBundleWithReferral(referral, { value })
+              : raffle.buyMediumTicketBundle({ value }),
+        },
+        {
+          amount: LARGE_BUNDLE_AMOUNT,
+          multiplier: PRICE_LARGE_BUNDLE_MULTIPLIER,
+          purchase: (raffle, value, referral) =>
+            referral
+              ? raffle.buyLargeTicketBundleWithReferral(referral, { value })
+              : raffle.buyLargeTicketBundle({ value }),
+        },
+      ];
 
     conditions.forEach(({ amount, multiplier, purchase }) => {
       describe(`${amount} ticket(s)`, () => {
         it(`Should buy ${amount} ticket(s)`, async () => {
-          const { raffle, token, players, ticketPrice } =
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
           const [player] = players;
-          await token
-            .connect(player)
-            .approve(await raffle.getAddress(), ticketPrice * multiplier);
-          await expect(purchase(raffle.connect(player))).to.changeTokenBalance(
-            token,
+          await expect(purchase(raffle.connect(player), ticketPrice * multiplier)).to.changeEtherBalance(
             player.address,
             -ticketPrice * multiplier,
           );
@@ -208,153 +189,108 @@ describe("Raffle", function () {
         });
 
         it(`Should change player's balance when buying ${amount} ticket(s)`, async () => {
-          const { raffle, token, players, ticketPrice } =
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
           const [player] = players;
-          await token
-            .connect(player)
-            .approve(await raffle.getAddress(), ticketPrice * multiplier);
-          await expect(purchase(raffle.connect(player))).to.changeTokenBalances(
-            token,
+          await expect(purchase(raffle.connect(player), ticketPrice * multiplier)).to.changeEtherBalances(
             [player, raffle],
             [-ticketPrice * multiplier, ticketPrice * multiplier],
           );
           expect(await raffle.connect(player).tickets(player)).to.equal(amount);
         });
 
-        it("Should fail if it does not have allowance", async () => {
-          const { raffle, players } = await loadFixture(deployRaffleFixture);
-          await expect(purchase(raffle.connect(players[0]))).to.be.rejectedWith(
-            "Insufficient Allowance",
-          );
-        });
-
-        it("Should fail if it does not have enough tokens", async () => {
-          const { raffle, token, players, ticketPrice } =
+        it("Should fail if it does not send enough ethers", async () => {
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
-          const [player, rando] = players;
-          // We transfer all the tokens out of the player before hand
-          const playerBalance = await token
-            .connect(player)
-            .balanceOf(player.address);
-          await token.connect(player).transfer(rando.address, playerBalance);
-          await token
-            .connect(player)
-            .approve(await raffle.getAddress(), ticketPrice * 3n * multiplier);
-          await expect(purchase(raffle.connect(players[0]))).to.be.rejectedWith(
+          const [player] = players;
+          await expect(purchase(raffle.connect(player), 1n)).to.be.rejectedWith(
             "Insufficient funds",
           );
         });
 
         it("Should report how many tickets the user has", async () => {
-          const { raffle, token, players, ticketPrice } =
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
           const [player] = players;
           const playerRaffle = raffle.connect(player);
-          // Aprove 2 tickets
-          await token
-            .connect(player)
-            .approve(await raffle.getAddress(), ticketPrice * 2n * multiplier);
           // Buy 1 ticket and verify that the player has 1 ticket
-          await playerRaffle.buySmallTicketBundle();
+          await playerRaffle.buySmallTicketBundle({ value: ticketPrice });
           const smallBundle = await raffle.smallBundle();
           expect(await playerRaffle.tickets(player)).to.equal(
             smallBundle.amount,
           );
           // Buy more tickets and verify that the player now has amount + 1 tickets
-          await purchase(playerRaffle);
+          await purchase(playerRaffle, ticketPrice * multiplier);
           expect(await playerRaffle.tickets(player)).to.equal(
             BigInt(amount) + smallBundle.amount,
           );
         });
 
         it("Should reflect the amount of tickets each user has", async () => {
-          const { raffle, token, players, ticketPrice } =
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
           const [player1, player2] = players;
           // Aprove 2 tickets
-          await token
-            .connect(player1)
-            .approve(await raffle.getAddress(), ticketPrice * multiplier);
-          await purchase(raffle.connect(player1));
+          await purchase(raffle.connect(player1), ticketPrice * multiplier);
           expect(await raffle.connect(player1).tickets(player1)).to.equal(
             amount,
           );
 
           // Aprove 1 tickets
           const rafflePlayer2 = raffle.connect(player2);
-          await token
-            .connect(player2)
-            .approve(await raffle.getAddress(), ticketPrice * 3n);
-          await rafflePlayer2.buySmallTicketBundle();
-          await rafflePlayer2.buySmallTicketBundle();
-          await rafflePlayer2.buySmallTicketBundle();
+          await rafflePlayer2.buySmallTicketBundle({ value: ticketPrice * multiplier });
+          await rafflePlayer2.buySmallTicketBundle({ value: ticketPrice * multiplier });
+          await rafflePlayer2.buySmallTicketBundle({ value: ticketPrice * multiplier });
           expect(await rafflePlayer2.tickets(player2)).to.equal(
             SMALL_BUNDLE_AMOUNT * 3n,
           );
         });
 
         it("Should fail if the raffle end date has been reached", async () => {
-          const { raffle, players } = await loadFixture(deployRaffleFixture);
+          const { raffle, players, ticketPrice } = await loadFixture(deployRaffleFixture);
           await time.increaseTo(generateDateInTheFuture(10));
-          await expect(purchase(raffle.connect(players[0]))).to.be.rejectedWith(
+          await expect(purchase(raffle.connect(players[0]), ticketPrice * multiplier)).to.be.rejectedWith(
             "Raffle is over",
           );
         });
 
         it("Should increment the pot when more people buy tickets", async () => {
-          const { raffle, token, players, ticketPrice } =
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
           const [player1, player2] = players;
           expect(await raffle.pot()).to.equal(0);
           const rAddress = await raffle.getAddress();
-          await token
-            .connect(player1)
-            .approve(rAddress, ticketPrice * multiplier);
-          await expect(purchase(raffle.connect(player1))).to.changeTokenBalance(
-            token,
+          await expect(purchase(raffle.connect(player1), ticketPrice * multiplier)).to.changeEtherBalance(
             player1,
             -ticketPrice * multiplier,
           );
           expect(await raffle.pot()).to.equal(ticketPrice * multiplier);
-          await token
-            .connect(player2)
-            .approve(rAddress, ticketPrice * multiplier);
-          await expect(purchase(raffle.connect(player2))).to.changeTokenBalance(
-            token,
+          await expect(purchase(raffle.connect(player2), ticketPrice * multiplier)).to.changeEtherBalance(
             player2,
             -ticketPrice * multiplier,
           );
           expect(await raffle.pot()).to.equal(ticketPrice * 2n * multiplier);
-          expect(await token.balanceOf(rAddress)).to.equal(
+          expect(await hre.ethers.provider.getBalance(rAddress)).to.equal(
             ticketPrice * 2n * multiplier,
           );
         });
 
         it("Should increment the tickets sold when more people buy tickets", async () => {
-          const { raffle, token, owner, players, ticketPrice } =
+          const { raffle, owner, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
           const [player1, player2] = players;
           expect(await raffle.pot()).to.equal(0);
           const rAddress = await raffle.getAddress();
-          await token
-            .connect(player1)
-            .approve(rAddress, ticketPrice * multiplier);
-          await expect(purchase(raffle.connect(player1))).to.changeTokenBalance(
-            token,
+          await expect(purchase(raffle.connect(player1), ticketPrice * multiplier)).to.changeEtherBalance(
             player1,
             -ticketPrice * multiplier,
           );
           expect(await raffle.connect(owner).listSoldTickets()).to.equal(
             amount,
           );
-          await token
-            .connect(player2)
-            .approve(rAddress, ticketPrice * multiplier);
-          await expect(purchase(raffle.connect(player2))).to.changeTokenBalance(
-            token,
-            player2,
-            -ticketPrice * multiplier,
+          await expect(purchase(raffle.connect(player2), ticketPrice * multiplier)).to.changeEtherBalances(
+            [player2, raffle],
+            [-ticketPrice * multiplier, ticketPrice * multiplier],
           );
           expect(await raffle.connect(owner).listSoldTickets()).to.equal(
             amount * 2n,
@@ -363,20 +299,17 @@ describe("Raffle", function () {
 
         it("Should not allow owner to participate in the Raffle", async () => {
           const { raffle, owner } = await loadFixture(deployRaffleFixture);
-          await expect(purchase(raffle.connect(owner))).to.be.rejectedWith(
+          await expect(purchase(raffle.connect(owner), 0n)).to.be.rejectedWith(
             "Owner cannot participate in the Raffle",
           );
         });
 
         it("Should not allow to buy a free tickets after purchasing tickets", async () => {
-          const { raffle, players, token, ticketPrice } =
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
 
           const [player] = players;
-          await token
-            .connect(player)
-            .approve(await raffle.getAddress(), ticketPrice * multiplier);
-          await purchase(raffle.connect(player));
+          await purchase(raffle.connect(player), ticketPrice * multiplier);
 
           await expect(
             raffle.connect(player).getFreeTicket(),
@@ -384,7 +317,7 @@ describe("Raffle", function () {
         });
 
         it("Should give one ticket to referral", async () => {
-          const { raffle, players, token, ticketPrice } =
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
 
           const [player, referral] = players;
@@ -392,40 +325,31 @@ describe("Raffle", function () {
           await raffle.connect(referral).getFreeTicket();
 
           // We purchase the ticket with the referral
-          await token
-            .connect(player)
-            .approve(await raffle.getAddress(), ticketPrice * multiplier);
-          await purchase(raffle.connect(player), referral.address);
+          await purchase(raffle.connect(player), ticketPrice * multiplier, referral.address);
 
           // Should own free ticket + referral ticket
           expect(await raffle.connect(referral).tickets(referral)).to.equal(2);
         });
 
         it("Should not let user refer itself", async () => {
-          const { raffle, players, token, ticketPrice } =
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
 
           const [player] = players;
-          await token
-            .connect(player)
-            .approve(await raffle.getAddress(), ticketPrice * multiplier);
 
           await expect(
-            purchase(raffle.connect(player), player.address),
+            purchase(raffle.connect(player), ticketPrice * multiplier, player.address),
           ).to.be.rejectedWith("User can not refer themselves");
         });
 
         it("Should not let refer users who are not playing", async () => {
-          const { raffle, players, token, ticketPrice } =
+          const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);
 
           const [player, referral] = players;
-          await token
-            .connect(player)
-            .approve(await raffle.getAddress(), ticketPrice * multiplier);
 
           await expect(
-            purchase(raffle.connect(player), referral.address),
+            purchase(raffle.connect(player), ticketPrice * multiplier, referral.address),
           ).to.be.rejectedWith("Can only refer a user who owns a ticket");
         });
       });
@@ -437,16 +361,12 @@ describe("Raffle", function () {
     let price: bigint;
 
     beforeEach(async () => {
-      const { raffle, token, players, ticketPrice } =
+      const { raffle, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       price = ticketPrice;
       const [player] = players;
       expect(await raffle.pot()).to.equal(0);
-      const rAddress = await raffle.getAddress();
-      await token
-        .connect(player)
-        .approve(rAddress, ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
-      await raffle.connect(player).buyMediumTicketBundle();
+      await raffle.connect(player).buyMediumTicketBundle({ value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER });
       raffleInstance = raffle;
     });
 
@@ -495,36 +415,24 @@ describe("Raffle", function () {
     });
 
     it("Should distribute half of the pot to the winner", async () => {
-      const { raffle, owner, token, players, ticketPrice } =
+      const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, random] = players;
-      await token
-        .connect(player)
-        .approve(
-          await raffle.getAddress(),
-          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
-        );
-      await raffle.connect(player).buyMediumTicketBundle();
+      await raffle.connect(player).buyMediumTicketBundle({ value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER });
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
 
       time.increaseTo(generateDateInTheFuture(10));
       await expect(
         raffle.connect(owner).finishRaffle(random),
-      ).to.changeTokenBalance(token, player, pot / 2n);
+      ).to.changeEtherBalance(player, pot / 2n);
     });
 
     it("Should distribute half of the pot to the donation campaign (minus comission)", async () => {
-      const { raffle, owner, token, players, ticketPrice } =
+      const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, donation] = players;
-      await token
-        .connect(player)
-        .approve(
-          await raffle.getAddress(),
-          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
-        );
-      await raffle.connect(player).buyMediumTicketBundle();
+      await raffle.connect(player).buyMediumTicketBundle({ value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER });
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
 
@@ -532,20 +440,14 @@ describe("Raffle", function () {
       const comission = (pot / 2n / 100n) * 5n;
       await expect(
         raffle.connect(owner).finishRaffle(donation),
-      ).to.changeTokenBalance(token, donation, pot / 2n - comission);
+      ).to.changeEtherBalance(donation, pot / 2n - comission);
     });
 
     it("Should distribute the pot between winner, donation campaign and comission", async () => {
-      const { raffle, owner, token, players, ticketPrice } =
+      const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, donation] = players;
-      await token
-        .connect(player)
-        .approve(
-          await raffle.getAddress(),
-          ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
-        );
-      await raffle.connect(player).buyLargeTicketBundle();
+      await raffle.connect(player).buyLargeTicketBundle({ value: ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER });
       const pot = await raffle.pot();
       expect(pot).to.equal(ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER);
 
@@ -553,45 +455,32 @@ describe("Raffle", function () {
       const comission = (pot / 2n / 100n) * 5n;
       await expect(
         raffle.connect(owner).finishRaffle(donation),
-      ).to.changeTokenBalances(
-        token,
+      ).to.changeEtherBalances(
         [player, donation, owner],
         [pot / 2n, pot / 2n - comission, comission],
       );
     });
 
     it("Should define a winner", async () => {
-      const { raffle, owner, token, players, ticketPrice } =
+      const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, random] = players;
-      await token
-        .connect(player)
-        .approve(
-          await raffle.getAddress(),
-          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
-        );
-      await raffle.connect(player).buyMediumTicketBundle();
+      await raffle.connect(player).buyMediumTicketBundle({ value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER });
       const pot = await raffle.pot();
 
       time.increaseTo(generateDateInTheFuture(10));
       await expect(
         raffle.connect(owner).finishRaffle(random),
-      ).to.changeTokenBalance(token, player, pot / 2n);
+      ).to.changeEtherBalance(player, pot / 2n);
 
       expect(await raffle.winner()).to.equal(player.address);
     });
 
     it("Should set winner's parameter and event to the same", async () => {
-      const { raffle, owner, token, players, ticketPrice } =
+      const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, random] = players;
-      await token
-        .connect(player)
-        .approve(
-          await raffle.getAddress(),
-          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
-        );
-      await raffle.connect(player).buyMediumTicketBundle();
+      await raffle.connect(player).buyMediumTicketBundle({ value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER });
 
       time.increaseTo(generateDateInTheFuture(5));
       const winnerTx = await raffle.connect(owner).finishRaffle(random);
@@ -602,22 +491,16 @@ describe("Raffle", function () {
     });
 
     it("Should not be able to be invoked once a winner was decided", async () => {
-      const { raffle, owner, token, players, ticketPrice } =
+      const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, random] = players;
-      await token
-        .connect(player)
-        .approve(
-          await raffle.getAddress(),
-          ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
-        );
-      await raffle.connect(player).buyMediumTicketBundle();
+      await raffle.connect(player).buyMediumTicketBundle({ value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER });
       const pot = await raffle.pot();
 
       time.increaseTo(generateDateInTheFuture(10));
       await expect(
         raffle.connect(owner).finishRaffle(random),
-      ).to.changeTokenBalance(token, player, pot / 2n);
+      ).to.changeEtherBalance(player, pot / 2n);
 
       expect(await raffle.winner()).to.equal(player.address);
 
@@ -636,7 +519,7 @@ describe("Raffle", function () {
 
       // Run pickWinner multiple times to check weighted randomness
       for (let i = 0; i < 500; i++) {
-        const { raffle, owner, token, players, ticketPrice } =
+        const { raffle, owner, players, ticketPrice } =
           await loadFixture(deployRaffleFixture);
         const [player1, player2, player3] = players;
         // Players buy tickets
@@ -644,24 +527,16 @@ describe("Raffle", function () {
         const ticketCost = ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER;
 
         // Player 1
-        await token
-          .connect(player1)
-          .approve(await raffle.getAddress(), ticketCost);
-        await raffle.connect(player1).buyMediumTicketBundle(); // 1 ticket
+        await raffle.connect(player1).buyMediumTicketBundle({ value: ticketCost }); // 1 bundle
 
         // Player 2
-        await token
-          .connect(player2)
-          .approve(await raffle.getAddress(), ticketCost * 3n);
-        await raffle.connect(player2).buyMediumTicketBundle(); // 1 ticket
-        await raffle.connect(player2).buyMediumTicketBundle(); // Total 2 tickets
-        await raffle.connect(player2).buyMediumTicketBundle(); // Total 3 tickets
+
+        await raffle.connect(player2).buyMediumTicketBundle({ value: ticketCost }); // 1 bundle
+        await raffle.connect(player2).buyMediumTicketBundle({ value: ticketCost }); // Total 2 bundles
+        await raffle.connect(player2).buyMediumTicketBundle({ value: ticketCost }); // Total 3 bundles
 
         // Player 3
-        await token
-          .connect(player3)
-          .approve(await raffle.getAddress(), ticketCost);
-        await raffle.connect(player3).buyMediumTicketBundle(); // 1 ticket
+        await raffle.connect(player3).buyMediumTicketBundle({ value: ticketCost }); // 1 bundle
 
         // Simulate new block for randomness
         await hre.network.provider.send("evm_increaseTime", [

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
 /// @title Raffle contract to start a raffle with as many users as possible
 /// @author @Bullrich
 /// @notice Only the deployer of the contract can finish the raffle
@@ -26,8 +24,6 @@ contract Raffle {
     uint public immutable raffleEndDate;
     /// Total amount of the tokens in the contract
     uint public pot;
-    /// Token used in the contract as the currency
-    IERC20Metadata public immutable token;
 
     /// Address of the winner
     /// @dev this value is set up only after the raffle end
@@ -48,15 +44,12 @@ contract Raffle {
     /// @notice the final price should be discounted than buying the same amount of small bundles
     Bundle public largeBundle;
 
-    /// @param _ticketPrice Price of each ticket (without the decimals)
+    /// @param ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
-    /// @param _token Address of the ERC20 token that will be used in the Raffle
-    constructor(uint _ticketPrice, uint8 daysToEndDate, IERC20Metadata _token) {
+    constructor(uint ticketPrice, uint8 daysToEndDate) {
         raffleEndDate = getFutureTimestamp(daysToEndDate);
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
-        token = _token;
-        uint ticketPrice = _ticketPrice * (10 ** token.decimals());
 
         smallBundle = Bundle(45, ticketPrice);
         mediumBundle = Bundle(200, ticketPrice * 3);
@@ -69,11 +62,8 @@ contract Raffle {
         require(block.timestamp < raffleEndDate, "Raffle is over");
         require(bundle.amount > 0, "Can not buy 0 tickets");
         require(msg.sender != owner, "Owner cannot participate in the Raffle");
-        require(token.balanceOf(msg.sender) >= bundle.price, "Insufficient funds");
-        require(token.allowance(msg.sender, address(this)) >= bundle.price, "Insufficient Allowance");
-
-        token.transferFrom(msg.sender, address(this), bundle.price);
-        pot += bundle.price;
+        require(msg.value >= bundle.price, "Insufficient funds");
+        pot += msg.value;
         if (!isPlayer[msg.sender]) {
             isPlayer[msg.sender] = true;
             players.push(msg.sender);
@@ -95,26 +85,26 @@ contract Raffle {
     }
 
     /// Buy a small bundle of tickets
-    function buySmallTicketBundle() public returns (uint) {
+    function buySmallTicketBundle() public payable returns (uint) {
         return buyCollectionOfTickets(smallBundle);
     }
 
     /// Buy a small bundle of tickets and gives a referral ticket
     /// @param referral Address to give a referral ticket on purchaser
-    function buySmallTicketBundleWithReferral(address referral) external returns (uint) {
+    function buySmallTicketBundleWithReferral(address referral) external payable returns (uint) {
         uint receipt = buySmallTicketBundle();
         addReferral(referral);
         return receipt;
     }
 
     /// Buy a medium bundle of tickets
-    function buyMediumTicketBundle() public returns (uint) {
+    function buyMediumTicketBundle() public payable returns (uint) {
         return buyCollectionOfTickets(mediumBundle);
     }
 
     /// Buys a medium bundle of tickets and gives a referral ticket
     /// @param referral Address to give a referral ticket on purchaser
-    function buyMediumTicketBundleWithReferral(address referral) external returns (uint) {
+    function buyMediumTicketBundleWithReferral(address referral) external payable returns (uint) {
         uint receipt = buyMediumTicketBundle();
 
         addReferral(referral);
@@ -122,17 +112,38 @@ contract Raffle {
     }
 
     /// Buys a large bundle of tickets
-    function buyLargeTicketBundle() public returns (uint) {
+    function buyLargeTicketBundle() public payable returns (uint) {
         return buyCollectionOfTickets(largeBundle);
     }
 
     /// Buy a large bundle of tickets and gives a referral ticket
     /// @param referral Address to give a referral ticket on purchaser
-    function buyLargeTicketBundleWithReferral(address referral) external returns (uint) {
+    function buyLargeTicketBundleWithReferral(address referral) external payable returns (uint) {
         uint receipt = buyLargeTicketBundle();
 
         addReferral(referral);
         return receipt;
+    }
+
+    /// Fallback function for when ethers is transfered randomly to this contract
+    receive() external payable {
+        require(msg.sender != owner, "Owner cannot participate in the Raffle");
+        require(block.timestamp < raffleEndDate, "Raffle is over");
+
+        Bundle memory selectedBundle;
+
+        // We check if we can purchase any amount
+        if (msg.value >= largeBundle.price) {
+            selectedBundle = largeBundle;
+        } else if (msg.value >= mediumBundle.price) {
+            selectedBundle = mediumBundle;
+        } else if (msg.value >= smallBundle.price) {
+            selectedBundle = smallBundle;
+        } else {
+            revert("Incorrect payment amount");
+        }
+
+        buyCollectionOfTickets(selectedBundle);
     }
 
     /// Returns all the available bundles sorted from smaller to bigger
@@ -213,7 +224,7 @@ contract Raffle {
     /// Method used to finish a raffle
     /// @param donationAddress Address of the charity that will receive the tokens
     /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
-    function finishRaffle(address donationAddress) public returns (address) {
+    function finishRaffle(address payable donationAddress) public returns (address) {
         require(msg.sender == owner, "Invoker must be the owner");
         require(block.timestamp > raffleEndDate, "End date has not being reached yet");
         require(pot > 0, "The pot is empty. Raffle is invalid");
@@ -228,11 +239,14 @@ contract Raffle {
         uint donation = donationAmount();
         uint commision = (pot - halfOfPot) - donation;
         // Send to the winner
-        token.transfer(winner, halfOfPot);
+        (bool successWinner, ) = payable(winner).call{value: halfOfPot}("");
+        require(successWinner, "Failed to send prize to winner");
         // Send to the charity address
-        token.transfer(donationAddress, donation);
+        (bool successDonation, ) = donationAddress.call{value: donation}("");
+        require(successDonation, "Failed to send donation");
         // Get the commision
-        token.transfer(owner, commision);
+        (bool successOwner, ) = payable(owner).call{value: commision}("");
+        require(successOwner, "Failed to send commission to owner");
 
         return winner;
     }

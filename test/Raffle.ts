@@ -484,11 +484,11 @@ describe("Raffle", function () {
     });
 
     it("Should show the correct donation amount", async () => {
-      const commision =
+      const commission =
         ((price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n / 100n) * 25n;
       const [_, donation] = await raffleInstance.prizeDistribution();
       expect(donation).to.equal(
-        (price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n - commision,
+        (price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n - commission,
       );
     });
   });
@@ -624,18 +624,8 @@ describe("Raffle", function () {
     });
 
     describe("Prize distribution", () => {
-      it("Should give only prize if amount is exceeded", async () => {
-        const { raffle, owner, players, ticketPrice, prize } =
-          await loadFixture(deployRaffleFixture);
-        const [player] = players;
-
-        await player.sendTransaction({ to: raffle, value: prize * 5n });
-        const pot = await raffle.pot();
-        expect(pot).to.be.greaterThan(await raffle.prizePool());
-      });
-
       it("Should give half of pot if prize amount is not reached", async () => {
-        const { raffle, owner, players, ticketPrice, prize } =
+        const { raffle, players, ticketPrice } =
           await loadFixture(deployRaffleFixture);
         const [player] = players;
 

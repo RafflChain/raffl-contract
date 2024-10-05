@@ -28,7 +28,7 @@ contract Raffle {
     /// Total amount of the tokens in the contract
     uint public pot;
 
-    /// The fixed price that will be given to the winner
+    /// The fixed prize that will be given to the winner
     /// @dev This is if that amount gets reached, if not the pot is split in half
     uint public fixedPrize;
 
@@ -59,7 +59,7 @@ contract Raffle {
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
 
-        require(_fixedPrize > ticketPrice, "Price is lower than a ticket");
+        require(_fixedPrize > ticketPrice, "Fixed prize must be greater than ticket price");
         fixedPrize = _fixedPrize;
 
         smallBundle = Bundle(45, ticketPrice);
@@ -227,7 +227,7 @@ contract Raffle {
         uint prize = prizePool();
         uint remainingPool = pot - prize;
 
-        uint donation = (remainingPool / 100) * 75;
+        uint donation = (remainingPool * 75) / 100;
         uint commission = remainingPool - donation;
         return (prize, donation, commission);
     }

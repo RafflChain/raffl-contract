@@ -121,6 +121,13 @@ describe("Raffle", function () {
         raffle.connect(players[0]).listSoldTickets(),
       ).to.be.rejectedWith("Invoker must be the owner");
     });
+
+    it("Should not allow to put a low fixed prize", async () => {
+      const Raffle = await hre.ethers.getContractFactory("Raffle");
+      await expect(Raffle.deploy(10, 3, 1)).to.rejectedWith(
+        "Fixed prize must be greater than ticket price",
+      );
+    });
   });
 
   describe("Buy tickets", () => {

@@ -372,6 +372,67 @@ describe("Raffle", function () {
         });
       });
     });
+
+    describe("Fallback function", () => {
+      it("Should buy a small bundle with the fallback function", async () => {
+        const { raffle, owner, players, ticketPrice } =
+          await loadFixture(deployRaffleFixture);
+        const [player] = players;
+
+        // Send the amount for a small ticket bundle
+        await player.sendTransaction({ to: raffle, value: ticketPrice });
+        expect(await raffle.tickets(player)).to.equal(SMALL_BUNDLE_AMOUNT);
+      });
+
+      it("Should buy a medium bundle with the fallback function", async () => {
+        const { raffle, owner, players, ticketPrice } =
+          await loadFixture(deployRaffleFixture);
+        const [player] = players;
+
+        // Send the amount for a medium ticket bundle
+        await player.sendTransaction({
+          to: raffle,
+          value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
+        });
+        expect(await raffle.tickets(player)).to.equal(MEDIUM_BUNDLE_AMOUNT);
+      });
+
+      it("Should buy a large bundle with the fallback function", async () => {
+        const { raffle, owner, players, ticketPrice } =
+          await loadFixture(deployRaffleFixture);
+        const [player] = players;
+
+        // Send the amount for a large ticket bundle
+        const tx = await player.sendTransaction({
+          to: raffle,
+          value: ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
+        });
+
+        expect(await raffle.tickets(player)).to.equal(LARGE_BUNDLE_AMOUNT);
+      });
+
+      it("Should fail if owner send eth", async () => {
+        const { raffle, owner, players, ticketPrice } =
+          await loadFixture(deployRaffleFixture);
+
+        await expect(
+          owner.sendTransaction({
+            to: raffle,
+            value: ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
+          }),
+        ).to.rejectedWith("Owner cannot participate in the Raffle");
+      });
+
+      it("Should fail if too little eth got sent", async () => {
+        const { raffle, owner, players, ticketPrice } =
+          await loadFixture(deployRaffleFixture);
+        const [player] = players;
+
+        await expect(
+          player.sendTransaction({ to: raffle, value: ticketPrice / 2n }),
+        ).to.rejectedWith("Incorrect payment amount");
+      });
+    });
   });
 
   describe("Prize", () => {

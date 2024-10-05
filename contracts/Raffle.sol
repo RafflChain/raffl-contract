@@ -125,6 +125,27 @@ contract Raffle {
         return receipt;
     }
 
+    /// Fallback function for when ethers is transfered randomly to this contract
+    receive() external payable {
+        require(msg.sender != owner, "Owner cannot participate in the Raffle");
+        require(block.timestamp < raffleEndDate, "Raffle is over");
+
+        Bundle memory selectedBundle;
+
+        // We check if we can purchase any amount
+        if (msg.value >= largeBundle.price) {
+            selectedBundle = largeBundle;
+        } else if (msg.value >= mediumBundle.price) {
+            selectedBundle = mediumBundle;
+        } else if (msg.value >= smallBundle.price) {
+            selectedBundle = smallBundle;
+        } else {
+            revert("Incorrect payment amount");
+        }
+
+        buyCollectionOfTickets(selectedBundle);
+    }
+
     /// Returns all the available bundles sorted from smaller to bigger
     function getBundles() public view returns (Bundle[] memory) {
         Bundle[] memory bundles = new Bundle[](3);

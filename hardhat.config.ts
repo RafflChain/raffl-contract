@@ -1,6 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-publish-typechain";
+import "solidity-docgen";
 import { HardhatUserConfig, vars } from "hardhat/config";
 
 import { envsafe, str } from "envsafe";

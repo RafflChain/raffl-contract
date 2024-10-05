@@ -36,3 +36,6 @@ jobs:
       - run: npm run build
       - run: npm run test
       - run: echo '### Good job! All the tests passed 🚀' >> $GITHUB_STEP_SUMMARY
+      - run: echo '## Docs 📄' >> $GITHUB_STEP_SUMMARY
+      - run: npx hardhat docgen
+      - run: cat docs/index.md >> $GITHUB_STEP_SUMMARY

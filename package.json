@@ -17,6 +17,7 @@
     "hardhat": "^2.22.9",
     "hardhat-publish-typechain": "^0.7.1",
     "prettier": "^3.3.3",
-    "prettier-plugin-solidity": "^1.4.1"
+    "prettier-plugin-solidity": "^1.4.1",
+    "solidity-docgen": "^0.6.0-beta.36"
   }
 }

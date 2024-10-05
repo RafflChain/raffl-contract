@@ -341,6 +341,24 @@ describe("Raffle", function () {
           expect(await raffle.connect(referral).tickets(referral)).to.equal(2);
         });
 
+        it("Should emit event on referral", async () => {
+          const { raffle, players, ticketPrice } =
+            await loadFixture(deployRaffleFixture);
+
+          const [player, referral] = players;
+          // We made the referral into a player
+          await raffle.connect(referral).getFreeTicket();
+
+          // We purchase the ticket with the referral
+          const tx = await purchase(
+            raffle.connect(player),
+            ticketPrice * multiplier,
+            referral.address,
+          );
+
+          await expect(tx).to.emit(raffle, "Referred").withArgs(referral);
+        });
+
         it("Should not let user refer itself", async () => {
           const { raffle, players, ticketPrice } =
             await loadFixture(deployRaffleFixture);

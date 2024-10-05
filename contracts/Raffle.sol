@@ -65,7 +65,7 @@ contract Raffle {
 
     /// Utility method used to buy any given amount of tickets
     /// @param bundle the bundle that will be purchased
-    function buyCollectionOfTickets(Bundle memory bundle, address referral) private returns (uint) {
+    function buyCollectionOfTickets(Bundle memory bundle) private returns (uint) {
         require(block.timestamp < raffleEndDate, "Raffle is over");
         require(bundle.amount > 0, "Can not buy 0 tickets");
         require(msg.sender != owner, "Owner cannot participate in the Raffle");
@@ -81,9 +81,6 @@ contract Raffle {
         uint playerTickets = tickets[msg.sender];
         tickets[msg.sender] = playerTickets + bundle.amount;
 
-        if (referral != address(0)) {
-            addReferral(referral);
-        }
         return bundle.amount;
     }
 
@@ -99,19 +96,51 @@ contract Raffle {
         tickets[referral] += 1;
     }
 
-    /// Buy an individual ticket
+    /// Buy a small bundle of tickets
+    function buySmallTicketBundle() external returns (uint) {
+        return buyCollectionOfTickets(smallBundle);
+    }
+
+    /// Buy a small bundle of tickets and gives a referral ticket
+    /// @param referral Address to give a referral ticket on purchaser
     function buySmallTicketBundle(address referral) external returns (uint) {
-        return buyCollectionOfTickets(smallBundle, referral);
+        uint receipt = buyCollectionOfTickets(smallBundle);
+        if (referral != address(0)) {
+            addReferral(referral);
+        }
+        return receipt;
     }
 
-    /// Buy a collection of 10 tickets
+    /// Buy a medium bundle of tickets
+    function buyMediumTicketBundle() external returns (uint) {
+        return buyCollectionOfTickets(mediumBundle);
+    }
+
+    /// Buys a medium bundle of tickets and gives a referral ticket
+    /// @param referral Address to give a referral ticket on purchaser
     function buyMediumTicketBundle(address referral) external returns (uint) {
-        return buyCollectionOfTickets(mediumBundle, referral);
+        uint receipt = buyCollectionOfTickets(mediumBundle);
+
+        if (referral != address(0)) {
+            addReferral(referral);
+        }
+        return receipt;
     }
 
-    /// Buy a collection of 100 tickets
+    /// Buys a large bundle of tickets
+    function buyLargeTicketBundle() external returns (uint) {
+        return buyCollectionOfTickets(largeBundle);
+    }
+
+    /// Buy a large bundle of tickets and gives a referral ticket
+    /// @param referral Address to give a referral ticket on purchaser
     function buyLargeTicketBundle(address referral) external returns (uint) {
-        return buyCollectionOfTickets(largeBundle, referral);
+        uint receipt = buyCollectionOfTickets(largeBundle);
+
+        if (referral != address(0)) {
+            addReferral(referral);
+        }
+        return receipt;
     }
 
     /// Returns all the available bundles sorted from smaller to bigger

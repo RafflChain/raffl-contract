@@ -13,12 +13,13 @@ export default buildModule("Deployment", (m) => {
   const env = envsafe({
     PRICE: num(),
     DURATION: num(),
-    TOKEN: address(),
+    FIXED_PRIZE: num(),
   });
 
   const raffle = m.contract("Raffle", [
     hre.ethers.parseUnits(env.PRICE.toString(), "ether"),
     env.DURATION,
+    hre.ethers.parseUnits(env.FIXED_PRIZE.toString(), "ether"),
   ]);
 
   return { raffle };

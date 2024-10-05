@@ -20,6 +20,11 @@ on:
         required: true
         type: number
         default: 30
+      fixedPrice:
+        description: "Fixed price pool (in ETH)"
+        required: true
+        type: number
+        default: 3
 
 jobs:
   deploy:
@@ -62,6 +67,7 @@ jobs:
         env:
           PRICE: ${{ inputs.price }}
           DURATION: ${{ inputs.duration }}
+          FIXED_PRIZE: ${{ inputs.fixedPrice }}
           HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
       - name: Get sepolia contract address
         if: ${{ inputs.network == 'sepolia' }}

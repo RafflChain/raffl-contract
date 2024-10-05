@@ -28,6 +28,10 @@ contract Raffle {
     /// Total amount of the tokens in the contract
     uint public pot;
 
+    /// The fixed prize that will be given to the winner
+    /// @dev This is if that amount gets reached, if not the pot is split in half
+    uint public fixedPrize;
+
     /// Address of the winner
     /// @dev this value is set up only after the raffle end
     address public winner;
@@ -49,10 +53,14 @@ contract Raffle {
 
     /// @param ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
-    constructor(uint ticketPrice, uint8 daysToEndDate) {
+    /// @param _fixedPrize the prize pool that we are aiming to reach. Exceding pot will go to charity
+    constructor(uint ticketPrice, uint8 daysToEndDate, uint _fixedPrize) {
         raffleEndDate = getFutureTimestamp(daysToEndDate);
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
+
+        require(_fixedPrize > ticketPrice, "Fixed prize must be greater than ticket price");
+        fixedPrize = _fixedPrize;
 
         smallBundle = Bundle(45, ticketPrice);
         mediumBundle = Bundle(200, ticketPrice * 3);
@@ -214,16 +222,26 @@ contract Raffle {
         revert("No winner found - this should never happen");
     }
 
-    /// See what would be the prize pool with the current treasury
-    function prizePool() public view returns (uint) {
-        return pot / 2;
+    /// See how the prize would be distributed between end users
+    /// @return prize that will go to the winner.
+    /// Usually it's s fixedPrize but if that amount is not reached, then it's half of the pot.
+    /// @return donation amount. It's 75% of the remaining pot.
+    /// @return commission that will go to the contract owner.
+    function prizeDistribution() public view returns (uint, uint, uint) {
+        uint prize = prizePool();
+        uint remainingPool = pot - prize;
+
+        uint donation = (remainingPool * 75) / 100;
+        uint commission = remainingPool - donation;
+        return (prize, donation, commission);
     }
 
-    /// See what amount would be donated to the charity with the current treasury
-    function donationAmount() public view returns (uint) {
-        uint halfOfPot = prizePool();
-        uint commision = (halfOfPot / 100) * 5;
-        return halfOfPot - commision;
+    /// See what would be the prize pool with the current treasury
+    function prizePool() public view returns (uint) {
+        if (pot > fixedPrize) {
+            return fixedPrize;
+        }
+        return pot / 2;
     }
 
     /// Method used to finish a raffle
@@ -240,17 +258,15 @@ contract Raffle {
         emit WinnerPicked(winner);
 
         // Divide into parts
-        uint halfOfPot = prizePool();
-        uint donation = donationAmount();
-        uint commision = (pot - halfOfPot) - donation;
+        (uint prize, uint donation, uint commission) = prizeDistribution();
         // Send to the winner
-        (bool successWinner, ) = payable(winner).call{value: halfOfPot}("");
+        (bool successWinner, ) = payable(winner).call{value: prize}("");
         require(successWinner, "Failed to send prize to winner");
         // Send to the charity address
         (bool successDonation, ) = donationAddress.call{value: donation}("");
         require(successDonation, "Failed to send donation");
         // Get the commision
-        (bool successOwner, ) = payable(owner).call{value: commision}("");
+        (bool successOwner, ) = payable(owner).call{value: commission}("");
         require(successOwner, "Failed to send commission to owner");
 
         return winner;

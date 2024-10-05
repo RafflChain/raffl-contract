@@ -17,6 +17,7 @@ describe("Raffle", function () {
 
   async function deployRaffleFixture() {
     const ticketPrice = hre.ethers.parseUnits("0.005", "ether");
+    const prize = hre.ethers.parseUnits("3", "ether");
     const unlockDays = 2;
 
     // Contracts are deployed using the first signer/account by default
@@ -25,7 +26,7 @@ describe("Raffle", function () {
     const players = signers.slice(2);
 
     const Raffle = await hre.ethers.getContractFactory("Raffle");
-    const raffle = await Raffle.deploy(ticketPrice, 2);
+    const raffle = await Raffle.deploy(ticketPrice, 2, prize);
 
     return {
       raffle,
@@ -33,6 +34,7 @@ describe("Raffle", function () {
       ticketPrice: ticketPrice,
       owner,
       players,
+      prize,
     };
   }
 
@@ -55,7 +57,7 @@ describe("Raffle", function () {
 
     it("Should fail if the deployment time is not in the future", async () => {
       const Raffle = await hre.ethers.getContractFactory("Raffle");
-      await expect(Raffle.deploy(10, 0)).to.rejectedWith(
+      await expect(Raffle.deploy(10, 0, 100)).to.rejectedWith(
         "Future timestamp must be at least 1 day",
       );
     });
@@ -118,6 +120,13 @@ describe("Raffle", function () {
       await expect(
         raffle.connect(players[0]).listSoldTickets(),
       ).to.be.rejectedWith("Invoker must be the owner");
+    });
+
+    it("Should not allow to put a low fixed prize", async () => {
+      const Raffle = await hre.ethers.getContractFactory("Raffle");
+      await expect(Raffle.deploy(10, 3, 1)).to.rejectedWith(
+        "Fixed prize must be greater than ticket price",
+      );
     });
   });
 
@@ -482,10 +491,11 @@ describe("Raffle", function () {
     });
 
     it("Should show the correct donation amount", async () => {
-      const commision =
-        ((price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n / 100n) * 5n;
-      expect(await raffleInstance.donationAmount()).to.equal(
-        (price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n - commision,
+      const commission =
+        ((price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n / 100n) * 25n;
+      const [_, donation] = await raffleInstance.prizeDistribution();
+      expect(donation).to.equal(
+        (price * PRICE_MEDIUM_BUNDLE_MULTIPLIER) / 2n - commission,
       );
     });
   });
@@ -540,7 +550,7 @@ describe("Raffle", function () {
       expect(pot).to.equal(ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
 
       time.increaseTo(generateDateInTheFuture(10));
-      const commission = (pot / 2n / 100n) * 5n;
+      const commission = (pot / 2n / 100n) * 25n;
       await expect(
         raffle.connect(owner).finishRaffle(donation),
       ).to.changeEtherBalance(donation, pot / 2n - commission);
@@ -557,7 +567,7 @@ describe("Raffle", function () {
       expect(pot).to.equal(ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER);
 
       time.increaseTo(generateDateInTheFuture(10));
-      const comission = (pot / 2n / 100n) * 5n;
+      const comission = (pot / 2n / 100n) * 25n;
       await expect(
         raffle.connect(owner).finishRaffle(donation),
       ).to.changeEtherBalances(
@@ -618,6 +628,58 @@ describe("Raffle", function () {
       await expect(raffle.connect(owner).finishRaffle(random)).to.rejectedWith(
         "A winner has already been selected",
       );
+    });
+
+    describe("Prize distribution", () => {
+      it("Should give half of pot if prize amount is not reached", async () => {
+        const { raffle, players, ticketPrice } =
+          await loadFixture(deployRaffleFixture);
+        const [player] = players;
+
+        await raffle.connect(player).buyMediumTicketBundle({
+          value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
+        });
+        const pot = await raffle.pot();
+        expect(await raffle.prizePool()).to.be.equal(pot / 2n);
+      });
+
+      it("Should divide the pot between winner, donation campaign and comission with an unfulfilled prize", async () => {
+        const { raffle, owner, players, ticketPrice } =
+          await loadFixture(deployRaffleFixture);
+        const [player, donation] = players;
+        await raffle.connect(player).buyLargeTicketBundle({
+          value: ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
+        });
+        const pot = await raffle.pot();
+        expect(pot).to.equal(ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER);
+
+        time.increaseTo(generateDateInTheFuture(10));
+        const comission = (pot / 2n / 100n) * 25n;
+        await expect(
+          raffle.connect(owner).finishRaffle(donation),
+        ).to.changeEtherBalances(
+          [player, donation, owner],
+          [pot / 2n, pot / 2n - comission, comission],
+        );
+      });
+
+      it("Should divide the pot between winner, donation campaign and comission with a complete prize", async () => {
+        const { raffle, owner, players, prize } =
+          await loadFixture(deployRaffleFixture);
+        const [player, donation] = players;
+        await player.sendTransaction({ to: raffle, value: prize * 5n });
+        const pot = await raffle.pot();
+        expect(pot).to.equal(prize * 5n);
+
+        time.increaseTo(generateDateInTheFuture(10));
+        const commission = ((pot - prize) / 100n) * 25n;
+        await expect(
+          raffle.connect(owner).finishRaffle(donation),
+        ).to.changeEtherBalances(
+          [player, donation, owner],
+          [prize, pot - prize - commission, commission],
+        );
+      });
     });
 
     it("Should pick a winner based on weighted randomness", async function () {

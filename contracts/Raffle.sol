@@ -59,6 +59,7 @@ contract Raffle {
         require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
         owner = msg.sender;
 
+        require(_fixedPrize > ticketPrice, "Price is lower than a ticket");
         fixedPrize = _fixedPrize;
 
         smallBundle = Bundle(45, ticketPrice);

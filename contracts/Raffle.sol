@@ -17,6 +17,9 @@ contract Raffle {
     /// Emitted when the raffle is over
     event WinnerPicked(address winner);
 
+    /// Emitted when a user is referred
+    event Referred(address referral);
+
     /// Address of the deployer of the contract.
     /// @notice This is the user that can finalize the raffle and receives the commision
     address private immutable owner;
@@ -82,6 +85,8 @@ contract Raffle {
         require(isPlayer[referral], "Can only refer a user who owns a ticket");
 
         tickets[referral] += 1;
+
+        emit Referred(referral);
     }
 
     /// Buy a small bundle of tickets

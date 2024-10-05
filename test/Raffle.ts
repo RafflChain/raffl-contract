@@ -522,10 +522,10 @@ describe("Raffle", function () {
       expect(pot).to.equal(ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER);
 
       time.increaseTo(generateDateInTheFuture(10));
-      const comission = (pot / 2n / 100n) * 5n;
+      const commission = (pot / 2n / 100n) * 5n;
       await expect(
         raffle.connect(owner).finishRaffle(donation),
-      ).to.changeEtherBalance(donation, pot / 2n - comission);
+      ).to.changeEtherBalance(donation, pot / 2n - commission);
     });
 
     it("Should distribute the pot between winner, donation campaign and comission", async () => {

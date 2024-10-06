@@ -162,7 +162,7 @@ contract Raffle is Ownable {
     }
 
     /// Returns all the available bundles sorted from smaller to bigger
-    function getBundles() public view returns (Bundle[] memory) {
+    function getBundles() external view returns (Bundle[] memory) {
         Bundle[] memory bundles = new Bundle[](3);
         bundles[0] = Bundle(SMALL_BUNDLE_AMOUNT, smallBundlePrice);
         bundles[1] = Bundle(MEDIUM_BUNDLE_AMOUNT, mediumBundlePrice);
@@ -173,7 +173,7 @@ contract Raffle is Ownable {
 
     /// User obtains a free ticket
     /// @notice only the fist ticket is free
-    function getFreeTicket() public returns (uint) {
+    function getFreeTicket() external returns (uint) {
         if (players.contains(msg.sender)) revert FreeTicketClaimed();
         if (msg.sender == owner()) revert OwnerCannotParticipate();
         players.add(msg.sender);

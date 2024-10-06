@@ -84,6 +84,7 @@ contract Raffle is Ownable {
         if (!(sizeOfBundle > 0 && priceOfBundle > 0)) revert InvalidPurchase();
         if (msg.sender == owner()) revert OwnerCannotParticipate();
         if (msg.value < priceOfBundle) revert InsufficientFunds();
+
         players.add(msg.sender);
         uint playerTickets = tickets[msg.sender];
         tickets[msg.sender] = playerTickets + sizeOfBundle;
@@ -149,20 +150,15 @@ contract Raffle is Ownable {
         if (msg.sender == owner()) revert OwnerCannotParticipate();
         if (block.timestamp > raffleEndDate) revert RaffleOver();
 
-        uint selectedBundle;
-
-        // We check if we can purchase any amount
         if (msg.value >= largeBundlePrice) {
-            selectedBundle = LARGE_BUNDLE_AMOUNT;
+            buyCollectionOfTickets(LARGE_BUNDLE_AMOUNT, msg.value);
         } else if (msg.value >= mediumBundlePrice) {
-            selectedBundle = MEDIUM_BUNDLE_AMOUNT;
+            buyCollectionOfTickets(MEDIUM_BUNDLE_AMOUNT, msg.value);
         } else if (msg.value >= smallBundlePrice) {
-            selectedBundle = SMALL_BUNDLE_AMOUNT;
+            buyCollectionOfTickets(SMALL_BUNDLE_AMOUNT, msg.value);
         } else {
             revert InsufficientFunds();
         }
-
-        buyCollectionOfTickets(selectedBundle, msg.value);
     }
 
     /// Returns all the available bundles sorted from smaller to bigger

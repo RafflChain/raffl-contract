@@ -50,16 +50,16 @@ contract Raffle is Ownable {
     }
 
     /// Size of the small bundle
-    uint public constant SMALL_BUNDLE_AMOUNT = 45;
+    uint16 public constant SMALL_BUNDLE_AMOUNT = 45;
     /// Price of the small bundle
     uint public immutable smallBundlePrice;
     /// Size of the medium bundle
-    uint public constant MEDIUM_BUNDLE_AMOUNT = 200;
+    uint16 public constant MEDIUM_BUNDLE_AMOUNT = 200;
     /// Price of the medium bundle
     /// @notice the final price should be discounted than buying the same amount of small bundles
     uint public immutable mediumBundlePrice;
     /// Size of the large bundle
-    uint public constant LARGE_BUNDLE_AMOUNT = 660;
+    uint16 public constant LARGE_BUNDLE_AMOUNT = 660;
     /// Prize of the large bundle
     /// @notice the final price should be discounted than buying the same amount of small bundles
     uint public immutable largeBundlePrice;

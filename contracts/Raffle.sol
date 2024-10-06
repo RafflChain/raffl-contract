@@ -68,10 +68,7 @@ contract Raffle is Ownable {
     /// @param daysToEndDate Duration of the Raffle (in days)
     /// @param _fixedPrize the prize pool that we are aiming to reach. Exceding pot will go to charity
     constructor(uint ticketPrice, uint8 daysToEndDate, uint _fixedPrize) Ownable(msg.sender) {
-        raffleEndDate = getFutureTimestamp(daysToEndDate);
-        if (block.timestamp > raffleEndDate) revert InvalidTimestamp();
-
-        if (_fixedPrize < ticketPrice) revert InvalidPurchase();
+        raffleEndDate = block.timestamp + (daysToEndDate * 1 days);
         fixedPrize = _fixedPrize;
 
         smallBundlePrice = ticketPrice;
@@ -187,14 +184,6 @@ contract Raffle is Ownable {
         tickets[msg.sender] = 1;
 
         return 1;
-    }
-
-    /// Function to calculate the timestamp X days from now
-    function getFutureTimestamp(uint8 daysFromNow) private view returns (uint256) {
-        if (daysFromNow == 0) revert InvalidTimestamp();
-        // Convert days to seconds
-        uint256 futureTimestamp = block.timestamp + (daysFromNow * 1 days);
-        return futureTimestamp;
     }
 
     /// Calculate the total number of tickets

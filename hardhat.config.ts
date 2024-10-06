@@ -1,6 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-publish-typechain";
+import "hardhat-gas-reporter";
 import "solidity-docgen";
 import { HardhatUserConfig, vars } from "hardhat/config";
 
@@ -57,6 +58,10 @@ const config: HardhatUserConfig = {
     iifeGlobalObjectName: "mock",
     ignoreDeployedNetworks: ["localhost"],
     authToken: env.NPM_TOKEN,
+  },
+  gasReporter: {
+    enabled: true,
+    currency: "USD",
   },
 };
 

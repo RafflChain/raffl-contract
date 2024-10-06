@@ -147,24 +147,24 @@ describe("Raffle", function () {
         multiplier: 1n,
         purchase: (raffle, value, referral) =>
           referral
-            ? raffle.buySmallTicketBundleWithReferral(referral, { value })
-            : raffle.buySmallTicketBundle({ value }),
+            ? raffle.buyTicketBundleWithReferral(0, referral, { value })
+            : raffle.buyTicketBundle(0, { value }),
       },
       {
         amount: MEDIUM_BUNDLE_AMOUNT,
         multiplier: PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         purchase: (raffle, value, referral) =>
           referral
-            ? raffle.buyMediumTicketBundleWithReferral(referral, { value })
-            : raffle.buyMediumTicketBundle({ value }),
+            ? raffle.buyTicketBundleWithReferral(1, referral, { value })
+            : raffle.buyTicketBundle(1, { value }),
       },
       {
         amount: LARGE_BUNDLE_AMOUNT,
         multiplier: PRICE_LARGE_BUNDLE_MULTIPLIER,
         purchase: (raffle, value, referral) =>
           referral
-            ? raffle.buyLargeTicketBundleWithReferral(referral, { value })
-            : raffle.buyLargeTicketBundle({ value }),
+            ? raffle.buyTicketBundleWithReferral(2, referral, { value })
+            : raffle.buyTicketBundle(2, { value }),
       },
     ];
 
@@ -208,7 +208,7 @@ describe("Raffle", function () {
           const [player] = players;
           const playerRaffle = raffle.connect(player);
           // Buy 1 ticket and verify that the player has 1 ticket
-          await playerRaffle.buySmallTicketBundle({ value: ticketPrice });
+          await playerRaffle.buyTicketBundle(0, { value: ticketPrice });
           const smallBundle = await raffle.SMALL_BUNDLE_AMOUNT();
           expect(await playerRaffle.tickets(player)).to.equal(smallBundle);
           // Buy more tickets and verify that the player now has amount + 1 tickets
@@ -230,13 +230,13 @@ describe("Raffle", function () {
 
           // Aprove 1 tickets
           const rafflePlayer2 = raffle.connect(player2);
-          await rafflePlayer2.buySmallTicketBundle({
+          await rafflePlayer2.buyTicketBundle(0, {
             value: ticketPrice * multiplier,
           });
-          await rafflePlayer2.buySmallTicketBundle({
+          await rafflePlayer2.buyTicketBundle(0, {
             value: ticketPrice * multiplier,
           });
-          await rafflePlayer2.buySmallTicketBundle({
+          await rafflePlayer2.buyTicketBundle(0, {
             value: ticketPrice * multiplier,
           });
           expect(await rafflePlayer2.tickets(player2)).to.equal(
@@ -459,7 +459,7 @@ describe("Raffle", function () {
       price = ticketPrice;
       const [player] = players;
       expect(await hre.ethers.provider.getBalance(raffle)).to.equal(0);
-      await raffle.connect(player).buyMediumTicketBundle({
+      await raffle.connect(player).buyTicketBundle(1, {
         value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
       });
       raffleInstance = raffle;
@@ -514,7 +514,7 @@ describe("Raffle", function () {
       const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, random] = players;
-      await raffle.connect(player).buyMediumTicketBundle({
+      await raffle.connect(player).buyTicketBundle(1, {
         value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
       });
       const pot = await hre.ethers.provider.getBalance(raffle);
@@ -530,7 +530,7 @@ describe("Raffle", function () {
       const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, donation] = players;
-      await raffle.connect(player).buyMediumTicketBundle({
+      await raffle.connect(player).buyTicketBundle(1, {
         value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
       });
       const pot = await hre.ethers.provider.getBalance(raffle);
@@ -547,7 +547,7 @@ describe("Raffle", function () {
       const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, donation] = players;
-      await raffle.connect(player).buyLargeTicketBundle({
+      await raffle.connect(player).buyTicketBundle(2, {
         value: ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
       });
       const pot = await hre.ethers.provider.getBalance(raffle);
@@ -567,7 +567,7 @@ describe("Raffle", function () {
       const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, random] = players;
-      await raffle.connect(player).buyMediumTicketBundle({
+      await raffle.connect(player).buyTicketBundle(1, {
         value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
       });
       const pot = await hre.ethers.provider.getBalance(raffle);
@@ -584,7 +584,7 @@ describe("Raffle", function () {
       const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, random] = players;
-      await raffle.connect(player).buyMediumTicketBundle({
+      await raffle.connect(player).buyTicketBundle(1, {
         value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
       });
 
@@ -600,7 +600,7 @@ describe("Raffle", function () {
       const { raffle, owner, players, ticketPrice } =
         await loadFixture(deployRaffleFixture);
       const [player, random] = players;
-      await raffle.connect(player).buyMediumTicketBundle({
+      await raffle.connect(player).buyTicketBundle(1, {
         value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
       });
       const pot = await hre.ethers.provider.getBalance(raffle);
@@ -623,7 +623,7 @@ describe("Raffle", function () {
           await loadFixture(deployRaffleFixture);
         const [player] = players;
 
-        await raffle.connect(player).buyMediumTicketBundle({
+        await raffle.connect(player).buyTicketBundle(1, {
           value: ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER,
         });
         const pot = await hre.ethers.provider.getBalance(raffle);
@@ -634,7 +634,7 @@ describe("Raffle", function () {
         const { raffle, owner, players, ticketPrice } =
           await loadFixture(deployRaffleFixture);
         const [player, donation] = players;
-        await raffle.connect(player).buyLargeTicketBundle({
+        await raffle.connect(player).buyTicketBundle(2, {
           value: ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
         });
         const pot = await hre.ethers.provider.getBalance(raffle);
@@ -687,26 +687,16 @@ describe("Raffle", function () {
         const ticketCost = ticketPrice * PRICE_MEDIUM_BUNDLE_MULTIPLIER;
 
         // Player 1
-        await raffle
-          .connect(player1)
-          .buyMediumTicketBundle({ value: ticketCost }); // 1 bundle
+        await raffle.connect(player1).buyTicketBundle(1, { value: ticketCost }); // 1 bundle
 
         // Player 2
 
-        await raffle
-          .connect(player2)
-          .buyMediumTicketBundle({ value: ticketCost }); // 1 bundle
-        await raffle
-          .connect(player2)
-          .buyMediumTicketBundle({ value: ticketCost }); // Total 2 bundles
-        await raffle
-          .connect(player2)
-          .buyMediumTicketBundle({ value: ticketCost }); // Total 3 bundles
+        await raffle.connect(player2).buyTicketBundle(1, { value: ticketCost }); // 1 bundle
+        await raffle.connect(player2).buyTicketBundle(1, { value: ticketCost }); // Total 2 bundles
+        await raffle.connect(player2).buyTicketBundle(1, { value: ticketCost }); // Total 3 bundles
 
         // Player 3
-        await raffle
-          .connect(player3)
-          .buyMediumTicketBundle({ value: ticketCost }); // 1 bundle
+        await raffle.connect(player3).buyTicketBundle(1, { value: ticketCost }); // 1 bundle
 
         // Simulate new block for randomness
         await hre.network.provider.send("evm_increaseTime", [

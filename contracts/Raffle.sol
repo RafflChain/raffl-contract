@@ -11,6 +11,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Raffle is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    enum BundleSize {
+        Small,
+        Medium,
+        Large
+    }
+
     error RaffleOver();
     error OwnerCannotParticipate();
     error InvalidPurchase();
@@ -104,45 +110,28 @@ contract Raffle is Ownable {
         emit Referred(referral);
     }
 
-    /// Buy a small bundle of tickets
-    function buySmallTicketBundle() public payable returns (uint) {
-        return buyCollectionOfTickets(SMALL_BUNDLE_AMOUNT, smallBundlePrice);
-    }
-
-    /// Buy a small bundle of tickets and gives a referral ticket
+    /// Buy a bundle of tickets and refer a user
+    /// @param size of the bundle
     /// @param referral Address to give a referral ticket on purchaser
-    function buySmallTicketBundleWithReferral(address referral) external payable returns (uint) {
-        uint receipt = buySmallTicketBundle();
-        addReferral(referral);
-        return receipt;
-    }
-
-    /// Buy a medium bundle of tickets
-    function buyMediumTicketBundle() public payable returns (uint) {
-        return buyCollectionOfTickets(MEDIUM_BUNDLE_AMOUNT, mediumBundlePrice);
-    }
-
-    /// Buys a medium bundle of tickets and gives a referral ticket
-    /// @param referral Address to give a referral ticket on purchaser
-    function buyMediumTicketBundleWithReferral(address referral) external payable returns (uint) {
-        uint receipt = buyMediumTicketBundle();
+    function buyTicketBundleWithReferral(BundleSize size, address referral) external payable returns (uint) {
+        uint receipt = buyTicketBundle(size);
 
         addReferral(referral);
         return receipt;
     }
 
-    /// Buys a large bundle of tickets
-    function buyLargeTicketBundle() public payable returns (uint) {
-        return buyCollectionOfTickets(LARGE_BUNDLE_AMOUNT, largeBundlePrice);
-    }
-
-    /// Buy a large bundle of tickets and gives a referral ticket
-    /// @param referral Address to give a referral ticket on purchaser
-    function buyLargeTicketBundleWithReferral(address referral) external payable returns (uint) {
-        uint receipt = buyLargeTicketBundle();
-
-        addReferral(referral);
-        return receipt;
+    /// Buy a bundle of tickets
+    /// @param size of the bundle
+    function buyTicketBundle(BundleSize size) public payable returns (uint) {
+        if (size == BundleSize.Small) {
+            return buyCollectionOfTickets(SMALL_BUNDLE_AMOUNT, smallBundlePrice);
+        } else if (size == BundleSize.Medium) {
+            return buyCollectionOfTickets(MEDIUM_BUNDLE_AMOUNT, mediumBundlePrice);
+        } else if (size == BundleSize.Large) {
+            return buyCollectionOfTickets(LARGE_BUNDLE_AMOUNT, largeBundlePrice);
+        } else {
+            revert InvalidPurchase();
+        }
     }
 
     /// Fallback function for when ethers is transfered randomly to this contract

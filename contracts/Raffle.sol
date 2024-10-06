@@ -34,8 +34,6 @@ contract Raffle is Ownable {
 
     /// Timestamp of when the raffle ends
     uint public immutable raffleEndDate;
-    /// Total amount of the tokens in the contract
-    uint public pot;
 
     /// The fixed prize that will be given to the winner
     /// @dev This is if that amount gets reached, if not the pot is split in half
@@ -89,7 +87,6 @@ contract Raffle is Ownable {
         if (!(sizeOfBundle > 0 && priceOfBundle > 0)) revert InvalidPurchase();
         if (msg.sender == owner()) revert OwnerCannotParticipate();
         if (msg.value < priceOfBundle) revert InsufficientFunds();
-        pot += msg.value;
         players.add(msg.sender);
         uint playerTickets = tickets[msg.sender];
         tickets[msg.sender] = playerTickets + sizeOfBundle;
@@ -239,7 +236,7 @@ contract Raffle is Ownable {
     /// @return commission that will go to the contract owner.
     function prizeDistribution() public view returns (uint, uint, uint) {
         uint prize = prizePool();
-        uint remainingPool = pot - prize;
+        uint remainingPool = address(this).balance - prize;
 
         uint donation = (remainingPool * 75) / 100;
         uint commission = remainingPool - donation;
@@ -248,10 +245,10 @@ contract Raffle is Ownable {
 
     /// See what would be the prize pool with the current treasury
     function prizePool() public view returns (uint) {
-        if (pot > fixedPrize) {
+        if (address(this).balance > fixedPrize) {
             return fixedPrize;
         }
-        return pot / 2;
+        return address(this).balance / 2;
     }
 
     /// Method used to finish a raffle

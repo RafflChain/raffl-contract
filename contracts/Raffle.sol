@@ -37,7 +37,7 @@ contract Raffle is Ownable {
 
     /// The fixed prize that will be given to the winner
     /// @dev This is if that amount gets reached, if not the pot is split in half
-    uint public fixedPrize;
+    uint public immutable fixedPrize;
 
     /// Address of the winner
     /// @dev this value is set up only after the raffle end

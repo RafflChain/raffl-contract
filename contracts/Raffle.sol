@@ -240,7 +240,7 @@ contract Raffle is Ownable {
     /// @param donationAddress Address of the charity that will receive the tokens
     /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
     function finishRaffle(address payable donationAddress) external onlyOwner returns (address) {
-        if (block.timestamp > raffleEndDate) revert RaffleOver();
+        if (block.timestamp < raffleEndDate) revert RaffleOver();
         if (winner != address(0)) revert RaffleOver();
 
         winner = pickRandomWinner();

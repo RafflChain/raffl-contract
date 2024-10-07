@@ -1,7 +1,6 @@
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-publish-typechain";
-import "hardhat-gas-reporter";
 import "solidity-docgen";
 import { HardhatUserConfig, vars } from "hardhat/config";
 
@@ -37,11 +36,11 @@ if (vars.has("MAINNET_PRIVATE_KEY")) {
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.24",
+    version: "0.8.26",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1000,
+        runs: 2000,
       },
     },
   },
@@ -61,7 +60,6 @@ const config: HardhatUserConfig = {
   },
   gasReporter: {
     enabled: true,
-    currency: "USD",
   },
 };
 

@@ -15,6 +15,7 @@ on:
         description: "Ticket Price (in ETH)"
         required: true
         type: number
+        default: 0.004
       duration:
         description: "Duration of Raffle"
         required: true

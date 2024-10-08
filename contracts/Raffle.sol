@@ -11,20 +11,28 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Raffle is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    /// Different type of the bundles. Used for specifying a purchase
     enum BundleSize {
         Small,
         Medium,
         Large
     }
 
+    /// Triggered when user wants to interact with a finished raffle
     error RaffleOver();
+    /// Triggered when the owner is trying to participate in its own raffle
     error OwnerCannotParticipate();
+    /// Triggered when the purchase number or type is invalid
     error InvalidPurchase();
+    /// Triggered on lack of funds for the selected bundle
     error InsufficientFunds();
+    /// User tried to refer an address that is himself or someone who is not playing
     error InvalidReferral(string);
-    error InvalidTimestamp();
+    /// User tried to claim the free ticket more than one
     error FreeTicketClaimed();
+    /// There was a problem while finishing the Raffle
     error ErrorFinishing(string);
+    /// There was a problem while transfering funds on the finished raffle
     error TransferFailed(uint, address);
 
     /// Set with all the players participating. Each user has tickets
@@ -129,7 +137,7 @@ contract Raffle is Ownable {
         } else if (size == BundleSize.Large) {
             return buyCollectionOfTickets(LARGE_BUNDLE_AMOUNT, largeBundlePrice);
         } else {
-            revert InvalidPurchase();
+            revert InsufficientFunds();
         }
     }
 

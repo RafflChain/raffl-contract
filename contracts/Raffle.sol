@@ -21,7 +21,7 @@ contract Raffle is Ownable {
     error OwnerCannotParticipate();
     error InvalidPurchase();
     error InsufficientFunds();
-    error InvalidReferal(string);
+    error InvalidReferral(string);
     error InvalidTimestamp();
     error FreeTicketClaimed();
     error ErrorFinishing(string);

@@ -111,7 +111,7 @@ describe("Raffle", function () {
       const { raffle, players } = await loadFixture(deployRaffleFixture);
       await expect(
         raffle.connect(players[0]).listSoldTickets(),
-      ).to.be.rejectedWith("OwnableUnauthorizedAccount");
+      ).to.be.revertedWithCustomError(raffle, "OwnableUnauthorizedAccount");
     });
   });
 

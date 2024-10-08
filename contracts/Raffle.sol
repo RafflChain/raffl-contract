@@ -1,18 +1,44 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 /// @title Raffle contract to start a raffle with as many users as possible
 /// @author @Bullrich
 /// @notice Only the deployer of the contract can finish the raffle
 /// @custom:security-contact info+security@rafflchain.com
-contract Raffle {
-    /// Array with all the players participating. Each user has tickets
-    address[] private players;
+contract Raffle is Ownable {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    /// Different type of the bundles. Used for specifying a purchase
+    enum BundleSize {
+        Small,
+        Medium,
+        Large
+    }
+
+    /// Triggered when user wants to interact with a finished raffle
+    error RaffleOver();
+    /// Triggered when the owner is trying to participate in its own raffle
+    error OwnerCannotParticipate();
+    /// Triggered when the purchase number or type is invalid
+    error InvalidPurchase();
+    /// Triggered on lack of funds for the selected bundle
+    error InsufficientFunds();
+    /// User tried to refer an address that is himself or someone who is not playing
+    error InvalidReferral(string);
+    /// User tried to claim the free ticket more than one
+    error FreeTicketClaimed();
+    /// There was a problem while finishing the Raffle
+    error ErrorFinishing(string);
+    /// There was a problem while transfering funds on the finished raffle
+    error TransferFailed(uint, address);
+
+    /// Set with all the players participating. Each user has tickets
+    EnumerableSet.AddressSet private players;
     /// Tickets each player owns
     mapping(address => uint) public tickets;
-
-    /// Mapping used to ensure that we don't have duplicate players
-    mapping(address => bool) private isPlayer;
 
     /// Emitted when the raffle is over
     event WinnerPicked(address winner);
@@ -20,17 +46,12 @@ contract Raffle {
     /// Emitted when a user is referred
     event Referred(address referral);
 
-    /// Address of the deployer of the contract.
-    /// @notice This is the user that can finalize the raffle and receives the commision
-    address private immutable owner;
     /// Timestamp of when the raffle ends
     uint public immutable raffleEndDate;
-    /// Total amount of the tokens in the contract
-    uint public pot;
 
     /// The fixed prize that will be given to the winner
     /// @dev This is if that amount gets reached, if not the pot is split in half
-    uint public fixedPrize;
+    uint public immutable fixedPrize;
 
     /// Address of the winner
     /// @dev this value is set up only after the raffle end
@@ -42,160 +63,127 @@ contract Raffle {
         uint price;
     }
 
-    /// Price and amount of the small bundle
-    Bundle public smallBundle;
-    /// Price and amount of the medium bundle
+    /// Size of the small bundle
+    uint16 public constant SMALL_BUNDLE_AMOUNT = 45;
+    /// Price of the small bundle
+    uint public immutable smallBundlePrice;
+    /// Size of the medium bundle
+    uint16 public constant MEDIUM_BUNDLE_AMOUNT = 200;
+    /// Price of the medium bundle
     /// @notice the final price should be discounted than buying the same amount of small bundles
-    Bundle public mediumBundle;
-    /// Price and amount of the big bundle
+    uint public immutable mediumBundlePrice;
+    /// Size of the large bundle
+    uint16 public constant LARGE_BUNDLE_AMOUNT = 660;
+    /// Prize of the large bundle
     /// @notice the final price should be discounted than buying the same amount of small bundles
-    Bundle public largeBundle;
+    uint public immutable largeBundlePrice;
 
     /// @param ticketPrice Price of each ticket (without the decimals)
     /// @param daysToEndDate Duration of the Raffle (in days)
     /// @param _fixedPrize the prize pool that we are aiming to reach. Exceding pot will go to charity
-    constructor(uint ticketPrice, uint8 daysToEndDate, uint _fixedPrize) {
-        raffleEndDate = getFutureTimestamp(daysToEndDate);
-        require(block.timestamp < raffleEndDate, "Unlock time should be in the future");
-        owner = msg.sender;
-
-        require(_fixedPrize > ticketPrice, "Fixed prize must be greater than ticket price");
+    constructor(uint ticketPrice, uint8 daysToEndDate, uint _fixedPrize) Ownable(msg.sender) {
+        raffleEndDate = block.timestamp + (daysToEndDate * 1 days);
         fixedPrize = _fixedPrize;
 
-        smallBundle = Bundle(45, ticketPrice);
-        mediumBundle = Bundle(200, ticketPrice * 3);
-        largeBundle = Bundle(660, ticketPrice * 5);
+        smallBundlePrice = ticketPrice;
+        mediumBundlePrice = ticketPrice * 3;
+        largeBundlePrice = ticketPrice * 5;
     }
 
     /// Utility method used to buy any given amount of tickets
-    /// @param bundle the bundle that will be purchased
-    function buyCollectionOfTickets(Bundle memory bundle) private returns (uint) {
-        require(block.timestamp < raffleEndDate, "Raffle is over");
-        require(bundle.amount > 0, "Can not buy 0 tickets");
-        require(msg.sender != owner, "Owner cannot participate in the Raffle");
-        require(msg.value >= bundle.price, "Insufficient funds");
-        pot += msg.value;
-        if (!isPlayer[msg.sender]) {
-            isPlayer[msg.sender] = true;
-            players.push(msg.sender);
-        }
-        uint playerTickets = tickets[msg.sender];
-        tickets[msg.sender] = playerTickets + bundle.amount;
+    /// @param sizeOfBundle the number of tickets that will be purchased
+    /// @param priceOfBundle the amount to pay for the bundle
+    function buyCollectionOfTickets(uint sizeOfBundle, uint priceOfBundle) private returns (uint) {
+        if (block.timestamp > raffleEndDate) revert RaffleOver();
+        if (!(sizeOfBundle > 0 && priceOfBundle > 0)) revert InvalidPurchase();
+        if (msg.sender == owner()) revert OwnerCannotParticipate();
+        if (msg.value < priceOfBundle) revert InsufficientFunds();
 
-        return bundle.amount;
+        players.add(msg.sender);
+        uint playerTickets = tickets[msg.sender];
+        tickets[msg.sender] = playerTickets + sizeOfBundle;
+
+        return sizeOfBundle;
     }
 
     /// Gives a ticket to a user who refered this player
     /// @param referral address of the user to give the referal bonus
     /// @dev the referring user must have own a ticket, proving that they are real accounts
     function addReferral(address referral) private {
-        require(referral != msg.sender, "User can not refer themselves");
-        require(isPlayer[referral], "Can only refer a user who owns a ticket");
-
+        if (referral == msg.sender) revert InvalidReferral("Referring themselves");
+        if (!players.contains(referral)) revert InvalidReferral("Not a player");
         tickets[referral] += 1;
 
         emit Referred(referral);
     }
 
-    /// Buy a small bundle of tickets
-    function buySmallTicketBundle() public payable returns (uint) {
-        return buyCollectionOfTickets(smallBundle);
-    }
-
-    /// Buy a small bundle of tickets and gives a referral ticket
+    /// Buy a bundle of tickets and refer a user
+    /// @param size of the bundle
     /// @param referral Address to give a referral ticket on purchaser
-    function buySmallTicketBundleWithReferral(address referral) external payable returns (uint) {
-        uint receipt = buySmallTicketBundle();
-        addReferral(referral);
-        return receipt;
-    }
-
-    /// Buy a medium bundle of tickets
-    function buyMediumTicketBundle() public payable returns (uint) {
-        return buyCollectionOfTickets(mediumBundle);
-    }
-
-    /// Buys a medium bundle of tickets and gives a referral ticket
-    /// @param referral Address to give a referral ticket on purchaser
-    function buyMediumTicketBundleWithReferral(address referral) external payable returns (uint) {
-        uint receipt = buyMediumTicketBundle();
+    function buyTicketBundleWithReferral(BundleSize size, address referral) external payable returns (uint) {
+        uint receipt = buyTicketBundle(size);
 
         addReferral(referral);
         return receipt;
     }
 
-    /// Buys a large bundle of tickets
-    function buyLargeTicketBundle() public payable returns (uint) {
-        return buyCollectionOfTickets(largeBundle);
-    }
-
-    /// Buy a large bundle of tickets and gives a referral ticket
-    /// @param referral Address to give a referral ticket on purchaser
-    function buyLargeTicketBundleWithReferral(address referral) external payable returns (uint) {
-        uint receipt = buyLargeTicketBundle();
-
-        addReferral(referral);
-        return receipt;
+    /// Buy a bundle of tickets
+    /// @param size of the bundle
+    function buyTicketBundle(BundleSize size) public payable returns (uint) {
+        if (size == BundleSize.Small) {
+            return buyCollectionOfTickets(SMALL_BUNDLE_AMOUNT, smallBundlePrice);
+        } else if (size == BundleSize.Medium) {
+            return buyCollectionOfTickets(MEDIUM_BUNDLE_AMOUNT, mediumBundlePrice);
+        } else if (size == BundleSize.Large) {
+            return buyCollectionOfTickets(LARGE_BUNDLE_AMOUNT, largeBundlePrice);
+        } else {
+            revert InsufficientFunds();
+        }
     }
 
     /// Fallback function for when ethers is transfered randomly to this contract
     receive() external payable {
-        require(msg.sender != owner, "Owner cannot participate in the Raffle");
-        require(block.timestamp < raffleEndDate, "Raffle is over");
+        if (msg.sender == owner()) revert OwnerCannotParticipate();
+        if (block.timestamp > raffleEndDate) revert RaffleOver();
 
-        Bundle memory selectedBundle;
-
-        // We check if we can purchase any amount
-        if (msg.value >= largeBundle.price) {
-            selectedBundle = largeBundle;
-        } else if (msg.value >= mediumBundle.price) {
-            selectedBundle = mediumBundle;
-        } else if (msg.value >= smallBundle.price) {
-            selectedBundle = smallBundle;
+        if (msg.value >= largeBundlePrice) {
+            buyCollectionOfTickets(LARGE_BUNDLE_AMOUNT, msg.value);
+        } else if (msg.value >= mediumBundlePrice) {
+            buyCollectionOfTickets(MEDIUM_BUNDLE_AMOUNT, msg.value);
+        } else if (msg.value >= smallBundlePrice) {
+            buyCollectionOfTickets(SMALL_BUNDLE_AMOUNT, msg.value);
         } else {
-            revert("Incorrect payment amount");
+            revert InsufficientFunds();
         }
-
-        buyCollectionOfTickets(selectedBundle);
     }
 
     /// Returns all the available bundles sorted from smaller to bigger
-    function getBundles() public view returns (Bundle[] memory) {
+    function getBundles() external view returns (Bundle[] memory) {
         Bundle[] memory bundles = new Bundle[](3);
-        bundles[0] = smallBundle;
-        bundles[1] = mediumBundle;
-        bundles[2] = largeBundle;
+        bundles[0] = Bundle(SMALL_BUNDLE_AMOUNT, smallBundlePrice);
+        bundles[1] = Bundle(MEDIUM_BUNDLE_AMOUNT, mediumBundlePrice);
+        bundles[2] = Bundle(LARGE_BUNDLE_AMOUNT, largeBundlePrice);
+
         return bundles;
     }
 
     /// User obtains a free ticket
     /// @notice only the fist ticket is free
-    function getFreeTicket() public returns (uint) {
-        require(!isPlayer[msg.sender], "User already owns tickets");
-        require(msg.sender != owner, "Owner can not participate in the Raffle");
-
-        isPlayer[msg.sender] = true;
-        players.push(msg.sender);
+    function getFreeTicket() external returns (uint) {
+        if (players.contains(msg.sender)) revert FreeTicketClaimed();
+        if (msg.sender == owner()) revert OwnerCannotParticipate();
+        players.add(msg.sender);
         tickets[msg.sender] = 1;
 
         return 1;
     }
 
-    /// Function to calculate the timestamp X days from now
-    function getFutureTimestamp(uint8 daysFromNow) private view returns (uint256) {
-        require(daysFromNow > 0, "Future timestamp must be at least 1 day");
-        // Convert days to seconds
-        uint256 futureTimestamp = block.timestamp + (daysFromNow * 1 days);
-        return futureTimestamp;
-    }
-
     /// Calculate the total number of tickets
     /// @notice Can only be invoked by the contract owner
-    function listSoldTickets() public view returns (uint256) {
-        require(msg.sender == owner, "Invoker must be the owner");
+    function listSoldTickets() public view onlyOwner returns (uint256) {
         uint ticketsSold = 0;
-        for (uint256 i = 0; i < players.length; i++) {
-            ticketsSold += tickets[players[i]];
+        for (uint256 i = 0; i < players.length(); i++) {
+            ticketsSold += tickets[players.at(i)];
         }
         return ticketsSold;
     }
@@ -204,7 +192,7 @@ contract Raffle {
     /// @notice the algorithm randomness can be predicted if triggered automatically, better to do it manually
     function pickRandomWinner() private view returns (address) {
         uint totalTickets = listSoldTickets();
-        require(totalTickets > 0, "No tickets sold");
+        if (totalTickets == 0) revert ErrorFinishing("No players");
 
         // Generate a pseudo-random number based on block variables
         uint randomNumber = uint(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, block.number))) %
@@ -212,14 +200,14 @@ contract Raffle {
 
         uint cumulativeSum = 0;
         // Iterate over players to find the winner
-        for (uint i = 0; i < players.length; i++) {
-            cumulativeSum += tickets[players[i]];
+        for (uint i = 0; i < players.length(); i++) {
+            cumulativeSum += tickets[players.at(i)];
             if (randomNumber < cumulativeSum) {
-                return players[i];
+                return players.at(i);
             }
         }
         // This case should never occur if the function is implemented correctly
-        revert("No winner found - this should never happen");
+        revert ErrorFinishing("Unknown");
     }
 
     /// See how the prize would be distributed between end users
@@ -229,7 +217,7 @@ contract Raffle {
     /// @return commission that will go to the contract owner.
     function prizeDistribution() public view returns (uint, uint, uint) {
         uint prize = prizePool();
-        uint remainingPool = pot - prize;
+        uint remainingPool = address(this).balance - prize;
 
         uint donation = (remainingPool * 75) / 100;
         uint commission = remainingPool - donation;
@@ -238,20 +226,18 @@ contract Raffle {
 
     /// See what would be the prize pool with the current treasury
     function prizePool() public view returns (uint) {
-        if (pot > fixedPrize) {
+        if (address(this).balance > fixedPrize) {
             return fixedPrize;
         }
-        return pot / 2;
+        return address(this).balance / 2;
     }
 
     /// Method used to finish a raffle
     /// @param donationAddress Address of the charity that will receive the tokens
     /// @notice Can only be called by the owner after the timestamp of the raffle has been reached
-    function finishRaffle(address payable donationAddress) public returns (address) {
-        require(msg.sender == owner, "Invoker must be the owner");
-        require(block.timestamp > raffleEndDate, "End date has not being reached yet");
-        require(pot > 0, "The pot is empty. Raffle is invalid");
-        require(winner == address(0), "A winner has already been selected");
+    function finishRaffle(address payable donationAddress) external onlyOwner returns (address) {
+        if (block.timestamp < raffleEndDate) revert RaffleOver();
+        if (winner != address(0)) revert RaffleOver();
 
         winner = pickRandomWinner();
 
@@ -261,13 +247,13 @@ contract Raffle {
         (uint prize, uint donation, uint commission) = prizeDistribution();
         // Send to the winner
         (bool successWinner, ) = payable(winner).call{value: prize}("");
-        require(successWinner, "Failed to send prize to winner");
+        if (!successWinner) revert TransferFailed(prize, winner);
         // Send to the charity address
         (bool successDonation, ) = donationAddress.call{value: donation}("");
-        require(successDonation, "Failed to send donation");
+        if (!successDonation) revert TransferFailed(donation, donationAddress);
         // Get the commision
-        (bool successOwner, ) = payable(owner).call{value: commission}("");
-        require(successOwner, "Failed to send commission to owner");
+        (bool successOwner, ) = payable(owner()).call{value: commission}("");
+        if (!successOwner) revert TransferFailed(commission, owner());
 
         return winner;
     }

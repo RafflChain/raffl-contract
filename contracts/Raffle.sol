@@ -84,7 +84,7 @@ contract Raffle is Ownable {
 
     /// Utility method used to buy any given amount of tickets
     /// @param sizeOfBundle the number of tickets that will be purchased
-    /// @param priceOfBundle the amount to puy for the bundle
+    /// @param priceOfBundle the amount to pay for the bundle
     function buyCollectionOfTickets(uint sizeOfBundle, uint priceOfBundle) private returns (uint) {
         if (block.timestamp > raffleEndDate) revert RaffleOver();
         if (!(sizeOfBundle > 0 && priceOfBundle > 0)) revert InvalidPurchase();
@@ -102,9 +102,8 @@ contract Raffle is Ownable {
     /// @param referral address of the user to give the referal bonus
     /// @dev the referring user must have own a ticket, proving that they are real accounts
     function addReferral(address referral) private {
-        if (referral == msg.sender) revert InvalidReferal("Refering themselves");
-        if (!players.contains(referral)) revert InvalidReferal("Not a player");
-
+        if (referral == msg.sender) revert InvalidReferral("Referring themselves");
+        if (!players.contains(referral)) revert InvalidReferral("Not a player");
         tickets[referral] += 1;
 
         emit Referred(referral);

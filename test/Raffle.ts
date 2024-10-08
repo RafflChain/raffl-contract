@@ -250,7 +250,7 @@ describe("Raffle", function () {
           await time.increaseTo(generateDateInTheFuture(10));
           await expect(
             purchase(raffle.connect(players[0]), ticketPrice * multiplier),
-          ).to.be.revertedWithCustomError(raffle, "RaffleOver()");
+          ).to.be.revertedWithCustomError(raffle, "RaffleOver");
         });
 
         it("Should increment the pot when more people buy tickets", async () => {
@@ -315,7 +315,7 @@ describe("Raffle", function () {
 
           await expect(
             raffle.connect(player).getFreeTicket(),
-          ).to.be.revertedWithCustomError(raffle, "FreeTicketClaimed()");
+          ).to.be.revertedWithCustomError(raffle, "FreeTicketClaimed");
         });
 
         it("Should give one ticket to referral", async () => {
@@ -367,7 +367,7 @@ describe("Raffle", function () {
               ticketPrice * multiplier,
               player.address,
             ),
-          ).to.be.revertedWithCustomError(raffle, "InvalidReferal");
+          ).to.be.revertedWithCustomError(raffle, "InvalidReferral");
         });
 
         it("Should not let refer users who are not playing", async () => {
@@ -382,7 +382,7 @@ describe("Raffle", function () {
               ticketPrice * multiplier,
               referral.address,
             ),
-          ).to.be.revertedWithCustomError(raffle, "InvalidReferal");
+          ).to.be.revertedWithCustomError(raffle, "InvalidReferral");
         });
       });
     });
@@ -434,7 +434,7 @@ describe("Raffle", function () {
             to: raffle,
             value: ticketPrice * PRICE_LARGE_BUNDLE_MULTIPLIER,
           }),
-        ).to.revertedWithCustomError(raffle, "OwnerCannotParticipate");
+        ).to.be.revertedWithCustomError(raffle, "OwnerCannotParticipate");
       });
 
       it("Should fail if too little eth got sent", async () => {
@@ -444,7 +444,7 @@ describe("Raffle", function () {
 
         await expect(
           player.sendTransaction({ to: raffle, value: ticketPrice / 2n }),
-        ).to.revertedWithCustomError(raffle, "InsufficientFunds");
+        ).to.be.revertedWithCustomError(raffle, "InsufficientFunds");
       });
     });
   });
@@ -492,14 +492,14 @@ describe("Raffle", function () {
       const { raffle, players } = await loadFixture(deployRaffleFixture);
       await expect(
         raffle.connect(players[0]).finishRaffle(players[0]),
-      ).to.revertedWithCustomError(raffle, "OwnableUnauthorizedAccount");
+      ).to.be.revertedWithCustomError(raffle, "OwnableUnauthorizedAccount");
     });
 
     it("Should fail if the closing time has not being reached", async () => {
       const { raffle, owner } = await loadFixture(deployRaffleFixture);
       await expect(
         raffle.connect(owner).finishRaffle(owner),
-      ).to.revertedWithCustomError(raffle, "RaffleOver");
+      ).to.be.revertedWithCustomError(raffle, "RaffleOver");
     });
 
     it("Should fail if no tickets were purchased", async () => {
@@ -507,7 +507,7 @@ describe("Raffle", function () {
       time.increaseTo(generateDateInTheFuture(10));
       await expect(
         raffle.connect(owner).finishRaffle(owner),
-      ).to.revertedWithCustomError(raffle, "ErrorFinishing");
+      ).to.be.revertedWithCustomError(raffle, "ErrorFinishing");
     });
 
     it("Should distribute half of the pot to the winner", async () => {
@@ -614,7 +614,7 @@ describe("Raffle", function () {
 
       await expect(
         raffle.connect(owner).finishRaffle(random),
-      ).to.revertedWithCustomError(raffle, "RaffleOver");
+      ).to.be.revertedWithCustomError(raffle, "RaffleOver");
     });
 
     describe("Prize distribution", () => {

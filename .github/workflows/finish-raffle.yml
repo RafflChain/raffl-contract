@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: master
     name: Finishing raffle
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4

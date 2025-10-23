@@ -1,0 +1,74 @@
+name: Finish Raffle
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: "Network"
+        required: true
+        default: "sepolia"
+        type: choice
+        options:
+          - sepolia
+          - mainnet
+      contractAddress:
+        description: "Contract Address"
+        required: true
+        type: string
+      donationAddress:
+        description: "Donation Address"
+        required: true
+        type: string
+
+jobs:
+  finish-raffle:
+    runs-on: ubuntu-latest
+    environment: master
+    name: Finishing raffle
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: bash
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+      - name: Use cached node_modules
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install dependencies
+        run: npm ci
+      - name: Install variables
+        run: |
+          npx hardhat vars set ALCHEMY_API_KEY ${{ secrets.ALCHEMY_API_KEY }}
+          npx hardhat vars set ETHERSCAN_API_KEY ${{ secrets.ETHERSCAN_API_KEY }}
+      - name: Set sepolia private key
+        if: ${{ inputs.network == 'sepolia' }}
+        run: npx hardhat vars set SEPOLIA_PRIVATE_KEY ${{ secrets.SEPOLIA_PRIVATE_KEY }}
+      - name: Set mainnet private key
+        if: ${{ inputs.network == 'mainnet' }}
+        run: npx hardhat vars set MAINNET_PRIVATE_KEY ${{ secrets.MAINNET_PRIVATE_KEY }}
+      - name: Finish raffle
+        run: npx hardhat ignition deploy ignition/modules/FinishRaffle.ts --network ${{ inputs.network }}
+        env:
+          CONTRACT_ADDRESS: ${{ inputs.contractAddress }}
+          DONATION_ADDRESS: ${{ inputs.donationAddress }}
+          HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
+      - name: Show sepolia transaction
+        if: ${{ inputs.network == 'sepolia' }}
+        run: |
+          echo '# Raffle finished! 🎉' >> $GITHUB_STEP_SUMMARY
+          echo "Contract Address: <a href=\"https://sepolia.etherscan.io/address/${{ inputs.contractAddress }}\">${{ inputs.contractAddress }}</a>" >> $GITHUB_STEP_SUMMARY
+      - name: Show mainnet transaction
+        if: ${{ inputs.network == 'mainnet' }}
+        run: |
+          echo '# Raffle finished! 🎉' >> $GITHUB_STEP_SUMMARY
+          echo "Contract Address: <a href=\"https://etherscan.io/address/${{ inputs.contractAddress }}\">${{ inputs.contractAddress }}</a>" >> $GITHUB_STEP_SUMMARY

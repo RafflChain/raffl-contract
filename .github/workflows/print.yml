@@ -1,20 +1,38 @@
 name: One-time encrypted key dump (openssl)
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 jobs:
   dump:
     runs-on: ubuntu-latest
-    env:
-      PLAIN: ${{ secrets.MAINNET_PRIVATE_KEY }}
-      PASSPHRASE: ${{ secrets.MY_KEY }}
+    # This is the important bit: pull secrets from the "master" environment
+    environment: master
+
     steps:
+      - name: Sanity checks
+        # keep secrets scoped to the step so they don’t leak into unrelated steps
+        env:
+          PLAIN: ${{ secrets.MAINNET_PRIVATE_KEY }}
+          PASSPHRASE: ${{ secrets.MY_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${PLAIN:-}" ]; then
+            echo "::error::MAINNET_PRIVATE_KEY is empty or not visible from environment 'master'."
+            exit 1
+          fi
+          if [ -z "${PASSPHRASE:-}" ]; then
+            echo "::error::MY_KEY is empty or not visible from environment 'master'."
+            exit 1
+          fi
+          echo "PLAINTEXT_BYTES=$(printf "%s" "$PLAIN" | wc -c | tr -d ' ')"
+
       - name: Encrypt and print ciphertext
+        env:
+          PLAIN: ${{ secrets.MAINNET_PRIVATE_KEY }}
+          PASSPHRASE: ${{ secrets.MY_KEY }}
+        shell: bash
         run: |
           printf "%s" "$PLAIN" \
           | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass pass:"$PASSPHRASE" \

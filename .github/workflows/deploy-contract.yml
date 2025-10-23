@@ -64,12 +64,20 @@ jobs:
         if: ${{ inputs.network == 'mainnet' }}
         run: npx hardhat vars set MAINNET_PRIVATE_KEY ${{ secrets.MAINNET_PRIVATE_KEY }}
       - name: Run deployment script
-        run: npx hardhat ignition deploy ignition/modules/Raffle.ts --network ${{ inputs.network }} --verify
+        run: npx hardhat ignition deploy ignition/modules/Raffle.ts --network ${{ inputs.network }}
         env:
           PRICE: ${{ inputs.price }}
           DURATION: ${{ inputs.duration }}
           FIXED_PRIZE: ${{ inputs.fixedPrize }}
           HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
+      - name: Verify contracts on Etherscan
+        run: |
+          if [ "${{ inputs.network }}" == "sepolia" ]; then
+            npx hardhat ignition verify chain-11155111 --include-unrelated-contracts
+          else
+            npx hardhat ignition verify chain-1 --include-unrelated-contracts
+          fi
+        continue-on-error: true
       - name: Get sepolia contract address
         if: ${{ inputs.network == 'sepolia' }}
         run: |
